@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Elderly-friendly base styles */
+@layer base {
+  html {
+    font-size: 20px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* High contrast focus styles */
+  *:focus-visible {
+    @apply outline-4 outline-primary-500 outline-offset-2;
+  }
+
+  /* Large touch targets */
+  button, a, input, select {
+    @apply min-h-touch;
+  }
+}
+
+@layer components {
+  /* Temperature display */
+  .temp-display {
+    @apply text-5xl font-bold tracking-tight;
+  }
+
+  .temp-unit {
+    @apply text-2xl font-normal text-gray-500;
+  }
+
+  /* Room card */
+  .room-card {
+    @apply bg-white rounded-3xl shadow-lg p-6 border-2 border-transparent 
+           hover:border-primary-300 transition-all duration-200;
+  }
+
+  .room-card.critical {
+    @apply border-danger;
+  }
+
+  /* Quick mode button */
+  .mode-btn {
+    @apply flex flex-col items-center justify-center gap-2 
+           min-h-touch-lg px-6 py-4 rounded-2xl 
+           bg-white shadow-md border-2 border-gray-200
+           hover:border-primary-500 hover:bg-primary-50
+           active:scale-95 transition-all duration-150
+           text-xl font-semibold;
+  }
+
+  .mode-btn.active {
+    @apply bg-primary-500 text-white border-primary-500 shadow-lg;
+  }
+
+  /* Language selector */
+  .lang-btn {
+    @apply flex items-center justify-center w-16 h-16 rounded-full 
+           bg-white shadow-md border-2 border-gray-200
+           hover:border-primary-500 active:scale-95 transition-all;
+  }
+
+  .lang-btn.active {
+    @apply bg-primary-500 border-primary-500;
+  }
+
+  /* PIN input */
+  .pin-input {
+    @apply w-20 h-24 text-center text-4xl font-bold 
+           border-4 border-gray-300 rounded-2xl
+           focus:border-primary-500 focus:ring-4 focus:ring-primary-200
+           transition-all;
+  }
+
+  /* Temperature slider */
+  .temp-slider {
+    @apply w-full h-4 bg-gray-200 rounded-full appearance-none cursor-pointer
+           [&::-webkit-slider-thumb]:appearance-none 
+           [&::-webkit-slider-thumb]:w-12 
+           [&::-webkit-slider-thumb]:h-12 
+           [&::-webkit-slider-thumb]:rounded-full 
+           [&::-webkit-slider-thumb]:bg-primary-500
+           [&::-webkit-slider-thumb]:shadow-lg
+           [&::-webkit-slider-thumb]:cursor-pointer;
+  }
+
+  /* Admin sidebar */
+  .admin-sidebar {
+    @apply w-64 bg-gray-900 text-white min-h-screen p-4;
+  }
+
+  .admin-nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-lg
+           hover:bg-gray-800 transition-colors;
+  }
+
+  .admin-nav-item.active {
+    @apply bg-primary-600 text-white;
+  }
+
+  /* Status indicator */
+  .status-dot {
+    @apply w-4 h-4 rounded-full;
+  }
+
+  .status-dot.online {
+    @apply bg-success;
+  }
+
+  .status-dot.offline {
+    @apply bg-danger;
+  }
+
+  .status-dot.warning {
+    @apply bg-warning;
+  }
+}
+
+/* Animations */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Voice assistant button */
+.voice-btn {
+  @apply fixed bottom-8 right-8 w-20 h-20 rounded-full 
+         bg-primary-500 text-white shadow-2xl
+         flex items-center justify-center
+         hover:bg-primary-600 active:scale-90
+         transition-all duration-200 z-50;
+}
+
+.voice-btn.listening {
+  @apply bg-danger animate-pulse;
+}

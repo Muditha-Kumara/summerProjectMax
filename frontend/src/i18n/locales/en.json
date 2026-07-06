@@ -1,0 +1,62 @@
+{
+  "app": {
+    "title": "Smart Heating",
+    "subtitle": "Summer Cottage"
+  },
+  "login": {
+    "title": "Welcome",
+    "subtitle": "Enter your PIN code",
+    "pinPlaceholder": "PIN",
+    "submit": "Log in",
+    "invalidPin": "Invalid PIN code",
+    "bookingExpired": "Your booking has expired"
+  },
+  "dashboard": {
+    "title": "Rooms",
+    "outdoorTemp": "Outdoor Temperature",
+    "currentTemp": "Current",
+    "targetTemp": "Target",
+    "humidity": "Humidity"
+  },
+  "rooms": {
+    "Kodinhoitohuone": "Utility Room",
+    "Eteinen": "Hallway",
+    "Makuuhuone": "Bedroom",
+    "Olohuone": "Living Room",
+    "Varasto": "Storage",
+    "Lämminvesivaraaja": "Water Heater",
+    "Ilmalämpöpumppu": "Heat Pump"
+  },
+  "modes": {
+    "home": "Home",
+    "away": "Away",
+    "eco": "Eco",
+    "comfort": "Comfort"
+  },
+  "actions": {
+    "temporaryLeave": "I'm stepping out",
+    "temporaryLeaveDesc": "Select duration",
+    "hours": "hours",
+    "voiceAssistant": "Voice Assistant",
+    "listening": "Listening...",
+    "adjustTemp": "Adjust temperature"
+  },
+  "weather": {
+    "clear": "Clear",
+    "clouds": "Cloudy",
+    "rain": "Rainy",
+    "snow": "Snow",
+    "wind": "Windy"
+  },
+  "alerts": {
+    "tempUpdated": "Temperature updated",
+    "modeChanged": "Mode changed",
+    "leaveActivated": "Temporary leave activated",
+    "error": "Something went wrong"
+  },
+  "language": {
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "en": "English"
+  }
+}

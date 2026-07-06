@@ -1,0 +1,62 @@
+{
+  "app": {
+    "title": "Älykäs Lämmitys",
+    "subtitle": "Kesämökki"
+  },
+  "login": {
+    "title": "Tervetuloa",
+    "subtitle": "Syötä PIN-koodisi",
+    "pinPlaceholder": "PIN",
+    "submit": "Kirjaudu sisään",
+    "invalidPin": "Virheellinen PIN-koodi",
+    "bookingExpired": "Varauksesi on päättynyt"
+  },
+  "dashboard": {
+    "title": "Huoneet",
+    "outdoorTemp": "Ulkolämpötila",
+    "currentTemp": "Nykyinen",
+    "targetTemp": "Tavoite",
+    "humidity": "Kosteus"
+  },
+  "rooms": {
+    "Kodinhoitohuone": "Kodinhoitohuone",
+    "Eteinen": "Eteinen",
+    "Makuuhuone": "Makuuhuone",
+    "Olohuone": "Olohuone",
+    "Varasto": "Varasto",
+    "Lämminvesivaraaja": "Lämminvesivaraaja",
+    "Ilmalämpöpumppu": "Ilmalämpöpumppu"
+  },
+  "modes": {
+    "home": "Kotona",
+    "away": "Poissa",
+    "eco": "Säästävä",
+    "comfort": "Mukava"
+  },
+  "actions": {
+    "temporaryLeave": "Lähden hetkeksi",
+    "temporaryLeaveDesc": "Valitse poissaoloaika",
+    "hours": "tuntia",
+    "voiceAssistant": "Puheavustaja",
+    "listening": "Kuunnellaan...",
+    "adjustTemp": "Säädä lämpötilaa"
+  },
+  "weather": {
+    "clear": "Selkeää",
+    "clouds": "Pilvistä",
+    "rain": "Sateista",
+    "snow": "Lumisadetta",
+    "wind": "Tuulista"
+  },
+  "alerts": {
+    "tempUpdated": "Lämpötila päivitetty",
+    "modeChanged": "Tila vaihdettu",
+    "leaveActivated": "Väliaikainen poissaolo aktivoitu",
+    "error": "Jotain meni pieleen"
+  },
+  "language": {
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "en": "English"
+  }
+}

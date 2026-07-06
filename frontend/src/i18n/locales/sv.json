@@ -1,0 +1,62 @@
+{
+  "app": {
+    "title": "Smart Uppvärmning",
+    "subtitle": "Sommarstuga"
+  },
+  "login": {
+    "title": "Välkommen",
+    "subtitle": "Ange din PIN-kod",
+    "pinPlaceholder": "PIN",
+    "submit": "Logga in",
+    "invalidPin": "Ogiltig PIN-kod",
+    "bookingExpired": "Din bokning har gått ut"
+  },
+  "dashboard": {
+    "title": "Rum",
+    "outdoorTemp": "Utetemperatur",
+    "currentTemp": "Nuvarande",
+    "targetTemp": "Mål",
+    "humidity": "Fuktighet"
+  },
+  "rooms": {
+    "Kodinhoitohuone": "Tvättstuga",
+    "Eteinen": "Hall",
+    "Makuuhuone": "Sovrum",
+    "Olohuone": "Vardagsrum",
+    "Varasto": "Förråd",
+    "Lämminvesivaraaja": "Varmvattenberedare",
+    "Ilmalämpöpumppu": "Luftvärmepump"
+  },
+  "modes": {
+    "home": "Hemma",
+    "away": "Borta",
+    "eco": "Ekonomisk",
+    "comfort": "Komfort"
+  },
+  "actions": {
+    "temporaryLeave": "Jag går ut en stund",
+    "temporaryLeaveDesc": "Välj bortovaro",
+    "hours": "timmar",
+    "voiceAssistant": "Röstassistent",
+    "listening": "Lyssnar...",
+    "adjustTemp": "Justera temperatur"
+  },
+  "weather": {
+    "clear": "Klart",
+    "clouds": "Molnigt",
+    "rain": "Regnigt",
+    "snow": "Snö",
+    "wind": "Blåsigt"
+  },
+  "alerts": {
+    "tempUpdated": "Temperatur uppdaterad",
+    "modeChanged": "Läge ändrat",
+    "leaveActivated": "Tillfällig bortovaro aktiverad",
+    "error": "Något gick fel"
+  },
+  "language": {
+    "fi": "Suomi",
+    "sv": "Svenska",
+    "en": "English"
+  }
+}
