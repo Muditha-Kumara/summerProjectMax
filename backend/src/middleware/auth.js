@@ -4,20 +4,34 @@ import User from '../models/User.js';
 import Booking from '../models/Booking.js';
 import logger from '../utils/logger.js';
 
-// Admin JWT Authentication
-export const authenticateAdmin = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
+const extractBearerToken = (req) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  return authHeader.slice(7);
+};
+
+// Admin JWT Authentication
+export const verifyAdminToken = async (req, res, next) => {
+  try {
+    const token = extractBearerToken(req);
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'Access denied. No token provided.'
       });
     }
 
-    const token = authHeader.substring(7);
     const decoded = jwt.verify(token, config.jwt.secret);
+    if (decoded.type && decoded.type !== 'admin') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid admin token'
+      });
+    }
 
     const user = await User.findById(decoded.userId);
     if (!user) {
@@ -45,11 +59,13 @@ export const authenticateAdmin = async (req, res, next) => {
   }
 };
 
+export const authenticateAdmin = verifyAdminToken;
+
 // User PIN Authentication (for guests)
-export const authenticateUser = async (req, res, next) => {
+export const verifyUserPIN = async (req, res, next) => {
   try {
     const { pin } = req.body;
-    const authHeader = req.headers.authorization;
+    const token = extractBearerToken(req);
 
     // Check for PIN in body or token in header
     if (pin) {
@@ -77,8 +93,7 @@ export const authenticateUser = async (req, res, next) => {
       req.booking = booking;
       req.userType = 'guest';
       next();
-    } else if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    } else if (token) {
       const decoded = jwt.verify(token, config.jwt.secret);
 
       if (decoded.type !== 'user') {
@@ -114,13 +129,14 @@ export const authenticateUser = async (req, res, next) => {
   }
 };
 
+export const authenticateUser = verifyUserPIN;
+
 // Optional authentication (for routes that work with or without auth)
 export const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = extractBearerToken(req);
 
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+    if (token) {
       const decoded = jwt.verify(token, config.jwt.secret);
 
       if (decoded.type === 'admin') {
@@ -141,6 +157,8 @@ export const optionalAuth = async (req, res, next) => {
 };
 
 export default {
+  verifyAdminToken,
+  verifyUserPIN,
   authenticateAdmin,
   authenticateUser,
   optionalAuth

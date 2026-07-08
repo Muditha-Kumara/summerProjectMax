@@ -10,6 +10,9 @@ router.get('/:id', optionalAuth, roomController.getById);
 router.get('/:id/history', optionalAuth, roomController.getHistoricalData);
 router.get('/:id/energy', optionalAuth, roomController.getEnergyConsumption);
 
+// Phase 2 spec: POST /api/rooms/:id/target-temperature
+router.post('/:id/target-temperature', optionalAuth, roomController.updateTemperature);
+
 // Protected routes (admin only)
 router.post('/', authenticateAdmin, roomController.create);
 router.put('/:id', authenticateAdmin, roomController.update);

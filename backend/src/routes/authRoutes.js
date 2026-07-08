@@ -4,7 +4,11 @@ import { authenticateAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Public routes
+// Phase 2 spec routes
+router.post('/admin/login', authController.login);
+router.post('/user/login', authController.loginWithPin);
+
+// Legacy routes (kept for backward compatibility)
 router.post('/login', authController.login);
 router.post('/login/pin', authController.loginWithPin);
 router.post('/register', authController.register);
