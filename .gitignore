@@ -1,2 +1,44 @@
-*.md
 *.pdf
+*.md
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+vite.svg
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test and cache artifacts
+.cache/
+.eslintcache
+.nyc_output/
+
+# Backend runtime data
+backend/uploads/
+backend/tmp/
+
+# Frontend runtime data
+frontend/.vite/
+frontend/dist/
