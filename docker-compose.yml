@@ -74,5 +74,3 @@ volumes:
 networks:
   app-net:
     driver: bridge
-
-</ARG>
