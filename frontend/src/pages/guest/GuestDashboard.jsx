@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import useRoomStore from '../../contexts/roomStore';
@@ -6,11 +7,13 @@ import RoomCard from '../../components/guest/RoomCard';
 import QuickModes from '../../components/guest/QuickModes';
 import TemporaryLeave from '../../components/guest/TemporaryLeave';
 import VoiceAssistant from '../../components/guest/VoiceAssistant';
+import authService from '../../services/authService';
 import api from '../../services/api';
 import { toast } from 'react-toastify';
 
 const GuestDashboard = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { rooms, outdoorTemp, weather, loading, fetchRooms } = useRoomStore();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
@@ -35,7 +38,6 @@ const GuestDashboard = () => {
 
   const handleTemporaryLeave = async (hours) => {
     try {
-      // Apply to all rooms
       for (const room of rooms) {
         await api.post(`/optimization/temporary-leave/${room.id}`, { durationHours: hours });
       }
@@ -45,6 +47,11 @@ const GuestDashboard = () => {
     } catch (error) {
       toast.error(t('alerts.error'));
     }
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/', { replace: true });
   };
 
   if (loading && rooms.length === 0) {
@@ -61,6 +68,25 @@ const GuestDashboard = () => {
       animate={{ opacity: 1 }}
       className="space-y-6 pb-32"
     >
+      {/* Top Bar with Logout */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-500">{t('greeting.welcome', 'Welcome back')}</p>
+          <h1 className="text-2xl font-bold text-gray-800">🏠 {t('app.title', 'Smart Heating')}</h1>
+        </div>
+        <motion.button
+          onClick={handleLogout}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-red-200
+                     text-red-600 font-semibold rounded-2xl shadow-sm
+                     hover:bg-red-50 hover:border-red-300 active:scale-95 transition-all"
+        >
+          <span className="text-xl">🚪</span>
+          <span className="text-lg">{t('actions.logout', 'Logout')}</span>
+        </motion.button>
+      </div>
+
       {/* Outdoor Weather Banner */}
       {outdoorTemp !== null && (
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl p-6 shadow-lg">
@@ -124,3 +150,4 @@ const GuestDashboard = () => {
 };
 
 export default GuestDashboard;
+
