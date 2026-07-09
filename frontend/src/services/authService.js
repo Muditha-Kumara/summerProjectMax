@@ -3,20 +3,34 @@ import api from './api';
 export const authService = {
   // Admin login
   loginAdmin: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    if (response.data.success && response.data.token) {
-      localStorage.setItem('adminToken', response.data.token);
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      if (response.data.success && response.data.token) {
+        localStorage.setItem('adminToken', response.data.token);
+      }
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed. Please try again.'
+      };
     }
-    return response.data;
   },
 
   // User PIN login
   loginUser: async (pin) => {
-    const response = await api.post('/auth/login/pin', { pin });
-    if (response.data.success && response.data.token) {
-      localStorage.setItem('userToken', response.data.token);
+    try {
+      const response = await api.post('/auth/login/pin', { pin });
+      if (response.data.success && response.data.token) {
+        localStorage.setItem('userToken', response.data.token);
+      }
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Login failed. Please try again.'
+      };
     }
-    return response.data;
   },
 
   // Logout
@@ -37,8 +51,15 @@ export const authService = {
 
   // Get current admin user
   getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data;
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to get user'
+      };
+    }
   }
 };
 

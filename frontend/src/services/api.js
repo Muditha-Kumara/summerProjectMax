@@ -32,17 +32,23 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear tokens and redirect to login
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('userToken');
+      const adminToken = localStorage.getItem('adminToken');
+      const userToken = localStorage.getItem('userToken');
       
-      if (window.location.pathname.startsWith('/admin')) {
-        window.location.href = '/admin';
-      } else {
-        window.location.href = '/';
+      // Only redirect if user was actually authenticated (session expired)
+      // Don't redirect on login failures (wrong PIN, wrong credentials)
+      if (adminToken || userToken) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('userToken');
+
+        if (window.location.pathname.startsWith('/admin')) {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/';
+        }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

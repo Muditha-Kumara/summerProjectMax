@@ -33,7 +33,7 @@ const AdminLogin = () => {
         toast.error(result.message || 'Invalid credentials');
       }
     } catch (error) {
-      toast.error('Login failed. Please try again.');
+      toast.error(error.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -103,3 +103,4 @@ const AdminLogin = () => {
 };
 
 export default AdminLogin;
+

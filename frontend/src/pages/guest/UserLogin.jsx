@@ -48,11 +48,16 @@ const UserLogin = () => {
       } else {
         toast.error(result.message || t('login.invalidPin'));
         setPin(['', '', '', '']);
-        document.getElementById('pin-0')?.focus();
+        setTimeout(() => {
+          document.getElementById('pin-0')?.focus();
+        }, 100);
       }
     } catch (error) {
-      toast.error(t('alerts.error'));
+      toast.error(error.response?.data?.message || t('alerts.error'));
       setPin(['', '', '', '']);
+      setTimeout(() => {
+        document.getElementById('pin-0')?.focus();
+      }, 100);
     } finally {
       setLoading(false);
     }
