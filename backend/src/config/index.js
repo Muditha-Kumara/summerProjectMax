@@ -8,6 +8,10 @@ const __dirname = dirname(__filename);
 // Load environment variables
 dotenv.config({ path: join(__dirname, '../../.env') });
 
+const dbName = process.env.POSTGRES_DB || process.env.DB_NAME || 'smart_heating';
+const dbUser = process.env.POSTGRES_USER || process.env.DB_USER || 'postgres';
+const dbPassword = process.env.POSTGRES_PASSWORD || process.env.DB_PASSWORD || 'postgres';
+
 const config = {
   // Server
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -18,9 +22,9 @@ const config = {
   database: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT, 10) || 5432,
-    database: process.env.DB_NAME || 'smart_heating',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
+    database: dbName,
+    user: dbUser,
+    password: dbPassword,
     min: parseInt(process.env.DB_POOL_MIN, 10) || 2,
     max: parseInt(process.env.DB_POOL_MAX, 10) || 10,
   },
