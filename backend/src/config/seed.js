@@ -144,8 +144,8 @@ const seedData = async () => {
     // Create sample booking with PIN
     const sampleBookingPin = '1234';
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
     const nextWeek = new Date(today);
     nextWeek.setDate(nextWeek.getDate() + 7);
 
@@ -153,7 +153,7 @@ const seedData = async () => {
       `INSERT INTO bookings (guest_name, guest_email, pin, check_in, check_out, preferred_temp, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT DO NOTHING`,
-      ['Sample Guest', 'guest@example.com', sampleBookingPin, tomorrow.toISOString(), nextWeek.toISOString(), 21.00, 'confirmed']
+      ['Sample Guest', 'guest@example.com', sampleBookingPin, yesterday.toISOString(), nextWeek.toISOString(), 21.00, 'confirmed']
     );
     logger.info(`Sample booking created with PIN: ${sampleBookingPin}`);
 
