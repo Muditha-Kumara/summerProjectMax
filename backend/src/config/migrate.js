@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS historical_data (
   spot_price DECIMAL(10,4)
 );
 
-CREATE INDEX idx_historical_data_room_timestamp ON historical_data(room_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_historical_data_room_timestamp ON historical_data(room_id, timestamp DESC);
 
 -- Bookings table
 CREATE TABLE IF NOT EXISTS bookings (
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS spot_prices (
   UNIQUE(timestamp, area)
 );
 
-CREATE INDEX idx_spot_prices_timestamp ON spot_prices(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_spot_prices_timestamp ON spot_prices(timestamp DESC);
 
 -- Weather data
 CREATE TABLE IF NOT EXISTS weather_data (
