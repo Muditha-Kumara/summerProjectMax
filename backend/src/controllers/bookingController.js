@@ -65,6 +65,35 @@ class BookingController {
     }
   }
 
+  // Get current user's booking (for guests)
+  async getCurrentBooking(req, res) {
+    try {
+      if (!req.booking) {
+        return res.status(401).json({
+          success: false,
+          message: 'No booking found for current user'
+        });
+      }
+
+      return res.json({
+        success: true,
+        booking: {
+          id: req.booking.id,
+          guestName: req.booking.guest_name,
+          checkIn: req.booking.check_in,
+          checkOut: req.booking.check_out,
+          preferredTemp: req.booking.preferred_temp
+        }
+      });
+    } catch (error) {
+      logger.error('Get current booking error', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch current booking'
+      });
+    }
+  }
+
   // Create new booking
   async create(req, res) {
     try {

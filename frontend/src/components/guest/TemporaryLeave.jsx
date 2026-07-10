@@ -1,24 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../../services/api';
 
 const TemporaryLeave = ({ onClose, onConfirm }) => {
   const { t } = useTranslation();
   
-  // Get booking dates from localStorage
+  // Get booking dates from backend
   const [bookingData, setBookingData] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [departureTime, setDepartureTime] = useState('');
   const [returnTime, setReturnTime] = useState('');
   const [quickDuration, setQuickDuration] = useState(null);
   const [validationError, setValidationError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem('bookingData');
-    if (stored) {
-      const data = JSON.parse(stored);
-      setBookingData(data);
-    }
+    const fetchBookingData = async () => {
+      try {
+        // Try to fetch from backend first
+        const token = localStorage.getItem('userToken') || localStorage.getItem('token');
+        if (token) {
+          const response = await api.get('/bookings/current', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (response.data.success && response.data.booking) {
+            setBookingData(response.data.booking);
+          }
+        }
+      } catch (error) {
+        // Fallback to localStorage if API fails
+        const stored = localStorage.getItem('bookingData');
+        if (stored) {
+          const data = JSON.parse(stored);
+          setBookingData(data);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookingData();
     
     // Set default date to today
     const today = new Date();
