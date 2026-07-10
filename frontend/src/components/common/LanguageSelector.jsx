@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LanguageSelector = () => {
   const { i18n } = useTranslation();
+  const [currentLang, setCurrentLang] = useState(i18n.language);
+
+  // Keep local state in sync with i18n (handles async language changes)
+  useEffect(() => {
+    const handler = () => setCurrentLang(i18n.language);
+    i18n.on('languageChanged', handler);
+    return () => i18n.off('languageChanged', handler);
+  }, [i18n]);
 
   const languages = [
     { code: 'fi', label: '🇫🇮', name: 'Suomi' },
@@ -11,7 +19,16 @@ const LanguageSelector = () => {
   ];
 
   const changeLanguage = (code) => {
-    i18n.changeLanguage(code);
+    // Manually persist to localStorage as fallback
+    // (some Android browsers silently block i18next's cache)
+    try {
+      localStorage.setItem('i18nextLng', code);
+    } catch (e) {
+      // localStorage unavailable (private mode, etc.)
+    }
+    i18n.changeLanguage(code).then(() => {
+      setCurrentLang(code);
+    });
   };
 
   return (

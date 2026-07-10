@@ -15,15 +15,24 @@ i18n
       sv: { translation: sv },
       en: { translation: en }
     },
-    lng: 'fi',
     fallbackLng: 'fi',
+    supportedLngs: ['fi', 'sv', 'en'],
+    nonExplicitSupportedLngs: true,
     interpolation: {
       escapeValue: false
     },
     detection: {
-      order: ['localStorage', 'navigator'],
+      order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
-      checkWhitelist: true
+      lookupLocalStorage: 'i18nextLng',
+      checkWhitelist: true,
+      convertDetectedLanguage: (lng) => {
+        // Normalize: "en-US" → "en", "sv-FI" → "sv"
+        if (!lng) return 'fi';
+        const short = lng.split('-')[0].toLowerCase();
+        if (['fi', 'sv', 'en'].includes(short)) return short;
+        return 'fi';
+      }
     }
   });
 
