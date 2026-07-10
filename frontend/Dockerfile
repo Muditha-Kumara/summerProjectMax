@@ -15,6 +15,10 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+# Copy SSL certificates (will be mounted from host in docker-compose)
+# For production, these should be real certificates
+RUN mkdir -p /etc/nginx/ssl
+
+EXPOSE 80 443
 
 CMD ["nginx", "-g", "daemon off;"]

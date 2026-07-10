@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 
 export default defineConfig({
   plugins: [react()],
@@ -19,10 +20,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    https: fs.existsSync('./ssl/server.crt') && fs.existsSync('./ssl/server.key') ? {
+      key: fs.readFileSync('./ssl/server.key'),
+      cert: fs.readFileSync('./ssl/server.crt')
+    } : false,
     proxy: {
       '/api': {
         target: 'http://backend-dev:3000',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       }
     }
   },

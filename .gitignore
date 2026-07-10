@@ -19,6 +19,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# SSL certificates
+ssl/
+
 # Environment files
 .env
 .env.*
