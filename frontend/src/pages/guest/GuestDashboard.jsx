@@ -36,10 +36,15 @@ const GuestDashboard = () => {
     }
   };
 
-  const handleTemporaryLeave = async (hours) => {
+  const handleTemporaryLeave = async (leaveData) => {
     try {
       for (const room of rooms) {
-        await api.post(`/optimization/temporary-leave/${room.id}`, { durationHours: hours });
+        await api.post(`/optimization/temporary-leave/${room.id}`, {
+          date: leaveData.date,
+          departureTime: leaveData.departureTime,
+          returnTime: leaveData.returnTime,
+          durationHours: leaveData.durationHours
+        });
       }
       toast.success(t('alerts.leaveActivated'));
       setShowLeaveModal(false);
@@ -112,18 +117,7 @@ const GuestDashboard = () => {
       )}
 
       {/* Quick Modes */}
-      <QuickModes onModeChange={handleQuickMode} />
-
-      {/* Temporary Leave Button */}
-      <button
-        onClick={() => setShowLeaveModal(true)}
-        className="w-full bg-orange-500 text-white text-2xl sm:text-3xl font-bold py-6 sm:py-8 rounded-3xl 
-                   shadow-lg hover:bg-orange-600 active:scale-[0.98] transition-all
-                   flex items-center justify-center gap-4 min-h-[100px] border-4 border-orange-600"
-      >
-        <span className="text-4xl sm:text-5xl">🚶</span>
-        {t('actions.temporaryLeave')}
-      </button>
+      <QuickModes onModeChange={handleQuickMode} onAwayClick={() => setShowLeaveModal(true)} />
 
       {/* Room Cards */}
       <div>

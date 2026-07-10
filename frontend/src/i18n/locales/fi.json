@@ -40,6 +40,13 @@
   "actions": {
     "temporaryLeave": "Lähden hetkeksi",
     "temporaryLeaveDesc": "Valitse poissaoloaika",
+    "away": "Poissa",
+    "awayDesc": "Aseta lähtö- ja paluuaika",
+    "date": "Päivämäärä",
+    "departureTime": "Lähtöaika",
+    "returnTime": "Paluuaika",
+    "quickDuration": "Pikakesto",
+    "leaveSummary": "Poissaolojakso",
     "hours": "tuntia",
     "voiceAssistant": "Puheavustaja",
     "listening": "Kuunnellaan...",

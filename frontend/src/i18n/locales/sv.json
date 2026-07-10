@@ -36,10 +36,19 @@
   "actions": {
     "temporaryLeave": "Jag går ut en stund",
     "temporaryLeaveDesc": "Välj bortovaro",
+    "away": "Borta",
+    "awayDesc": "Välj när du åker och kommer tillbaka",
+    "date": "Datum",
+    "departureTime": "Avresetid",
+    "returnTime": "Återkomsttid",
+    "quickDuration": "Snabbval",
+    "leaveSummary": "Bortovaro",
     "hours": "timmar",
     "voiceAssistant": "Röstassistent",
     "listening": "Lyssnar...",
-    "adjustTemp": "Justera temperatur"
+    "adjustTemp": "Justera temperatur",
+    "cancel": "Avbryt",
+    "confirm": "Bekräfta"
   },
   "weather": {
     "clear": "Klart",

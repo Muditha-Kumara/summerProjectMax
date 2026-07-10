@@ -36,10 +36,19 @@
   "actions": {
     "temporaryLeave": "I'm stepping out",
     "temporaryLeaveDesc": "Select duration",
+    "away": "Away",
+    "awayDesc": "Set your departure and return times",
+    "date": "Date",
+    "departureTime": "Departure Time",
+    "returnTime": "Return Time",
+    "quickDuration": "Quick Duration",
+    "leaveSummary": "Away period",
     "hours": "hours",
     "voiceAssistant": "Voice Assistant",
     "listening": "Listening...",
-    "adjustTemp": "Adjust temperature"
+    "adjustTemp": "Adjust temperature",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   },
   "weather": {
     "clear": "Clear",

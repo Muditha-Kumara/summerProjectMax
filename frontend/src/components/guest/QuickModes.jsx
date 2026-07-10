@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
-const QuickModes = ({ onModeChange }) => {
+const QuickModes = ({ onModeChange, onAwayClick }) => {
   const { t } = useTranslation();
   const [activeMode, setActiveMode] = useState('home');
 
@@ -14,6 +14,11 @@ const QuickModes = ({ onModeChange }) => {
   ];
 
   const handleModeClick = (modeId) => {
+    if (modeId === 'away') {
+      // Open the away modal instead of immediately changing mode
+      onAwayClick();
+      return;
+    }
     setActiveMode(modeId);
     onModeChange(modeId);
   };

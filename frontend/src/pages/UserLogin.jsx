@@ -25,6 +25,9 @@ const UserLogin = () => {
     try {
       const response = await axios.post('/api/auth/user/login', { pin: pinCode });
       localStorage.setItem('token', response.data.token);
+      if (response.data.booking) {
+        localStorage.setItem('bookingData', JSON.stringify(response.data.booking));
+      }
       navigate('/');
     } catch (err) {
       setError('Invalid PIN');
@@ -37,6 +40,9 @@ const UserLogin = () => {
     try {
       const response = await axios.post('/api/bookings/validate', { email });
       localStorage.setItem('token', response.data.token);
+      if (response.data.booking) {
+        localStorage.setItem('bookingData', JSON.stringify(response.data.booking));
+      }
       navigate('/');
     } catch (err) {
       setError('Invalid booking');
