@@ -57,7 +57,7 @@ const GuestDashboard = () => {
   if (loading && rooms.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-2xl text-gray-500 animate-pulse">Loading...</div>
+        <div className="text-3xl text-gray-600 animate-pulse font-semibold">Loading...</div>
       </div>
     );
   }
@@ -66,7 +66,7 @@ const GuestDashboard = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 pb-32"
+      className="space-y-8 pb-32"
     >
       {/* Top Bar with Logout */}
       <div className="flex items-center justify-between">
