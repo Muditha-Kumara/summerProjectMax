@@ -18,7 +18,7 @@ const VoiceAssistant = () => {
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setResponse('Voice recognition is not supported in this browser.');
+      setResponse(t('voice.notSupported'));
       setShowPanel(true);
       return;
     }
@@ -44,7 +44,7 @@ const VoiceAssistant = () => {
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       setIsListening(false);
-      setResponse('Sorry, I could not understand that.');
+      setResponse(t('voice.couldNotUnderstand'));
     };
 
     recognition.onend = () => {
@@ -59,15 +59,15 @@ const VoiceAssistant = () => {
     
     // Simple command processing
     if (lowerText.includes('lämpötila') || lowerText.includes('temperature') || lowerText.includes('temperatur')) {
-      setResponse('Current living room temperature is 21°C. Would you like to adjust it?');
+      setResponse(t('voice.tempResponse'));
     } else if (lowerText.includes('poissa') || lowerText.includes('away') || lowerText.includes('borta')) {
-      setResponse('Activating away mode. Temperature will be reduced to 16°C.');
+      setResponse(t('voice.awayResponse'));
     } else if (lowerText.includes('kotona') || lowerText.includes('home') || lowerText.includes('hemma')) {
-      setResponse('Activating home mode. Temperature set to 21°C.');
+      setResponse(t('voice.homeResponse'));
     } else if (lowerText.includes('apua') || lowerText.includes('help') || lowerText.includes('hjälp')) {
-      setResponse('You can ask me to: change temperature, set modes like home or away, or check the weather.');
+      setResponse(t('voice.helpResponse'));
     } else {
-      setResponse(`I heard: "${text}". You can ask about temperature, modes, or weather.`);
+      setResponse(`${t('voice.heardResponse')} "${text}". ${t('voice.askAbout')}`);
     }
   };
 
@@ -119,7 +119,7 @@ const VoiceAssistant = () => {
 
             {transcript && (
               <div className="bg-gray-100 rounded-xl p-4 mb-3">
-                <p className="text-lg text-gray-500 mb-1">You said:</p>
+                <p className="text-lg text-gray-500 mb-1">{t('voice.youSaid')}</p>
                 <p className="text-xl font-medium text-gray-800">"{transcript}"</p>
               </div>
             )}
@@ -132,7 +132,7 @@ const VoiceAssistant = () => {
 
             {!isListening && !transcript && !response && (
               <p className="text-gray-500 text-center py-6 text-lg">
-                Tap the microphone and speak a command
+                {t('voice.tapMic')}
               </p>
             )}
           </motion.div>

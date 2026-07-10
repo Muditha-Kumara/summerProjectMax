@@ -25,7 +25,7 @@ const QuickModes = ({ onModeChange, onAwayClick }) => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 px-2">{t('modes.title', 'Pikatilat')}</h2>
+      <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 px-2">{t('modes.title')}</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {modes.map((mode) => (
           <motion.button

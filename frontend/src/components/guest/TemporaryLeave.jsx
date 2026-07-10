@@ -122,7 +122,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
       }
       
       if (durationMinutes < 30) {
-        setValidationError(t('actions.minDurationError', 'Minimum duration is 30 minutes'));
+        setValidationError(t('actions.minDurationError'));
       }
     }
   };
@@ -138,7 +138,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
     }
     
     if (durationMinutes < 30) {
-      setValidationError(t('actions.minDurationError', 'Minimum duration is 30 minutes'));
+      setValidationError(t('actions.minDurationError'));
       return;
     }
     
@@ -191,7 +191,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
             {/* Helper Text */}
             <div className="bg-blue-50 border-4 border-blue-300 rounded-2xl p-5">
               <p className="text-lg sm:text-xl text-blue-900 text-center font-semibold leading-relaxed">
-                💡 {t('actions.helperText', 'Select how long you will be away. Minimum 30 minutes.')}
+                💡 {t('actions.helperText')}
               </p>
             </div>
 
@@ -224,7 +224,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
                 📅 {t('actions.date')}
               </label>
               <p className="text-base sm:text-lg text-gray-600 text-center">
-                {t('actions.dateHelper', 'Choose the day you will be away')}
+                {t('actions.dateHelper')}
               </p>
               <input
                 type="date"
@@ -237,7 +237,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
               />
               {isToday && (
                 <p className="text-lg sm:text-xl text-orange-700 text-center font-bold">
-                  ✓ {t('actions.today', 'Today')}
+                  ✓ {t('actions.today')}
                 </p>
               )}
             </div>
@@ -249,7 +249,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
                   🕐 {t('actions.departureTime')}
                 </label>
                 <p className="text-base sm:text-lg text-gray-600 text-center">
-                  {t('actions.departureHelper', 'When you leave')}
+                  {t('actions.departureHelper')}
                 </p>
                 <input
                   type="time"
@@ -265,7 +265,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
                   🕐 {t('actions.returnTime')}
                 </label>
                 <p className="text-base sm:text-lg text-gray-600 text-center">
-                  {t('actions.returnHelper', 'When you come back')}
+                  {t('actions.returnHelper')}
                 </p>
                 <input
                   type="time"
@@ -290,7 +290,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
             {departureTime && returnTime && !validationError && (
               <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-5 border-4 border-purple-400">
                 <p className="text-xl sm:text-2xl font-bold text-gray-800 text-center">
-                  {t('actions.leaveSummary', 'Poissaolo')}: {departureTime} - {returnTime}
+                  {t('actions.leaveSummary')}: {departureTime} - {returnTime}
                 </p>
               </div>
             )}
@@ -301,14 +301,14 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
                 onClick={onClose}
                 className="w-full py-6 sm:py-7 rounded-2xl text-xl sm:text-2xl font-bold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all min-h-[70px] sm:min-h-[80px] border-4 border-gray-400 active:bg-gray-400"
               >
-                {t('actions.cancel', 'Peruuta')}
+                {t('actions.cancel')}
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={!selectedDate || !departureTime || !returnTime}
                 className="w-full py-6 sm:py-7 rounded-2xl text-xl sm:text-2xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all min-h-[70px] sm:min-h-[80px] shadow-lg border-4 border-orange-600 disabled:bg-gray-300 disabled:border-gray-400 disabled:text-gray-500 disabled:cursor-not-allowed active:bg-orange-700"
               >
-                {t('actions.confirm', 'Vahvista')}
+                {t('actions.confirm')}
               </button>
             </div>
           </div>

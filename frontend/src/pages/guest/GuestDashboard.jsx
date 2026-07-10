@@ -24,6 +24,18 @@ const GuestDashboard = () => {
     return () => clearInterval(interval);
   }, [fetchRooms]);
 
+  // Map OpenWeather descriptions to translation keys
+  const getWeatherTranslationKey = (description) => {
+    if (!description) return 'clear';
+    const desc = description.toLowerCase();
+    if (desc.includes('clear') || desc.includes('sunny')) return 'clear';
+    if (desc.includes('cloud') || desc.includes('overcast')) return 'clouds';
+    if (desc.includes('rain') || desc.includes('drizzle') || desc.includes('shower')) return 'rain';
+    if (desc.includes('snow') || desc.includes('sleet')) return 'snow';
+    if (desc.includes('wind') || desc.includes('breeze')) return 'wind';
+    return 'clear';
+  };
+
   const handleQuickMode = async (mode) => {
     try {
       const response = await api.post(`/optimization/quick-mode/${mode}`);
@@ -60,7 +72,7 @@ const GuestDashboard = () => {
   if (loading && rooms.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-3xl text-gray-600 animate-pulse font-semibold">Loading...</div>
+        <div className="text-3xl text-gray-600 animate-pulse font-semibold">{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -74,8 +86,8 @@ const GuestDashboard = () => {
       {/* Top Bar with Logout */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-lg sm:text-xl text-gray-500 font-medium">{t('greeting.welcome', 'Tervetuloa')}</p>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 truncate">🏠 {t('app.title', 'Älykäs Lämmitys')}</h1>
+          <p className="text-lg sm:text-xl text-gray-500 font-medium">{t('greeting.welcome')}</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 truncate">🏠 {t('app.title')}</h1>
         </div>
         <motion.button
           onClick={handleLogout}
@@ -86,7 +98,7 @@ const GuestDashboard = () => {
                      hover:bg-red-50 hover:border-red-400 active:scale-95 transition-all min-h-[80px] text-lg sm:text-xl"
         >
           <span className="text-3xl sm:text-4xl">🚪</span>
-          <span>{t('actions.logout', 'Kirjaudu ulos')}</span>
+          <span>{t('actions.logout')}</span>
         </motion.button>
       </div>
 
@@ -107,7 +119,7 @@ const GuestDashboard = () => {
                    weather.icon?.includes('09') || weather.icon?.includes('10') ? '🌧️' :
                    weather.icon?.includes('13') ? '❄️' : '🌡️'}
                 </p>
-                <p className="text-xl sm:text-2xl capitalize mt-3 font-medium">{weather.description}</p>
+                <p className="text-xl sm:text-2xl capitalize mt-3 font-medium">{t(`weather.${getWeatherTranslationKey(weather.description)}`)}</p>
               </div>
             )}
           </div>

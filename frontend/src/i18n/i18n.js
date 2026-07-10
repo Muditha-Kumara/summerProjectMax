@@ -22,10 +22,9 @@ i18n
       escapeValue: false
     },
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'htmlTag'],
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
-      checkWhitelist: true,
       convertDetectedLanguage: (lng) => {
         // Normalize: "en-US" → "en", "sv-FI" → "sv"
         if (!lng) return 'fi';

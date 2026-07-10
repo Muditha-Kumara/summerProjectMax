@@ -3,20 +3,27 @@
     "title": "Smart Uppvärmning",
     "subtitle": "Sommarstuga"
   },
+  "greeting": {
+    "welcome": "Välkommen"
+  },
   "login": {
     "title": "Välkommen",
     "subtitle": "Ange din PIN-kod",
     "pinPlaceholder": "PIN",
     "submit": "Logga in",
     "invalidPin": "Ogiltig PIN-kod",
-    "bookingExpired": "Din bokning har gått ut"
+    "bookingExpired": "Din bokning har gått ut",
+    "useEmail": "Använd e-post",
+    "usePin": "Använd PIN-kod",
+    "emailPlaceholder": "E-post"
   },
   "dashboard": {
     "title": "Rum",
     "outdoorTemp": "Utetemperatur",
     "currentTemp": "Nuvarande",
     "targetTemp": "Mål",
-    "humidity": "Fuktighet"
+    "humidity": "Fuktighet",
+    "loading": "Laddar..."
   },
   "rooms": {
     "Kodinhoitohuone": "Tvättstuga",
@@ -27,7 +34,15 @@
     "Lämminvesivaraaja": "Varmvattenberedare",
     "Ilmalämpöpumppu": "Luftvärmepump"
   },
+  "controlModes": {
+    "auto": "Automatisk",
+    "manual": "Manuell",
+    "eco": "Ekonomisk",
+    "comfort": "Komfort",
+    "off": "Av"
+  },
   "modes": {
+    "title": "Snabblägen",
     "home": "Hemma",
     "away": "Borta",
     "eco": "Ekonomisk",
@@ -53,8 +68,21 @@
     "voiceAssistant": "Röstassistent",
     "listening": "Lyssnar...",
     "adjustTemp": "Justera temperatur",
+    "logout": "Logga ut",
     "cancel": "Avbryt",
     "confirm": "Bekräfta"
+  },
+  "voice": {
+    "notSupported": "Röstigenkänning stöds inte i denna webbläsare.",
+    "couldNotUnderstand": "Tyvärr, jag kunde inte förstå det.",
+    "tempResponse": "Nuvarande vardagsrumstemperatur är 21°C. Vill du justera den?",
+    "awayResponse": "Aktiverar bortaläge. Temperaturen sänks till 16°C.",
+    "homeResponse": "Aktiverar hemmaläge. Temperaturen är inställd på 21°C.",
+    "helpResponse": "Du kan be mig om: ändra temperatur, ställa in lägen som hemma eller borta, eller kolla vädret.",
+    "heardResponse": "Jag hörde:",
+    "askAbout": "Du kan fråga om temperatur, lägen eller väder.",
+    "youSaid": "Du sa:",
+    "tapMic": "Tryck på mikrofonen och säg ett kommando"
   },
   "weather": {
     "clear": "Klart",

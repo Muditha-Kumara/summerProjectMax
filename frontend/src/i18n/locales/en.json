@@ -3,20 +3,27 @@
     "title": "Smart Heating",
     "subtitle": "Summer Cottage"
   },
+  "greeting": {
+    "welcome": "Welcome"
+  },
   "login": {
     "title": "Welcome",
     "subtitle": "Enter your PIN code",
     "pinPlaceholder": "PIN",
     "submit": "Log in",
     "invalidPin": "Invalid PIN code",
-    "bookingExpired": "Your booking has expired"
+    "bookingExpired": "Your booking has expired",
+    "useEmail": "Use email",
+    "usePin": "Use PIN code",
+    "emailPlaceholder": "Email"
   },
   "dashboard": {
     "title": "Rooms",
     "outdoorTemp": "Outdoor Temperature",
     "currentTemp": "Current",
     "targetTemp": "Target",
-    "humidity": "Humidity"
+    "humidity": "Humidity",
+    "loading": "Loading..."
   },
   "rooms": {
     "Kodinhoitohuone": "Utility Room",
@@ -27,7 +34,15 @@
     "Lämminvesivaraaja": "Water Heater",
     "Ilmalämpöpumppu": "Heat Pump"
   },
+  "controlModes": {
+    "auto": "Automatic",
+    "manual": "Manual",
+    "eco": "Eco",
+    "comfort": "Comfort",
+    "off": "Off"
+  },
   "modes": {
+    "title": "Quick Modes",
     "home": "Home",
     "away": "Away",
     "eco": "Eco",
@@ -53,8 +68,21 @@
     "voiceAssistant": "Voice Assistant",
     "listening": "Listening...",
     "adjustTemp": "Adjust temperature",
+    "logout": "Log out",
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "voice": {
+    "notSupported": "Voice recognition is not supported in this browser.",
+    "couldNotUnderstand": "Sorry, I could not understand that.",
+    "tempResponse": "Current living room temperature is 21°C. Would you like to adjust it?",
+    "awayResponse": "Activating away mode. Temperature will be reduced to 16°C.",
+    "homeResponse": "Activating home mode. Temperature set to 21°C.",
+    "helpResponse": "You can ask me to: change temperature, set modes like home or away, or check the weather.",
+    "heardResponse": "I heard:",
+    "askAbout": "You can ask about temperature, modes, or weather.",
+    "youSaid": "You said:",
+    "tapMic": "Tap the microphone and speak a command"
   },
   "weather": {
     "clear": "Clear",

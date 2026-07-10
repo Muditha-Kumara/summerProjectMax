@@ -56,7 +56,7 @@ const RoomCard = ({ room }) => {
               {t(`rooms.${room.name}`, room.name)}
             </h3>
             <p className="text-sm sm:text-base text-gray-600 capitalize break-words">
-              {room.control_mode}
+              {t(`controlModes.${room.control_mode}`, room.control_mode)}
             </p>
           </div>
         </div>

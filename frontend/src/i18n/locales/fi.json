@@ -12,14 +12,18 @@
     "pinPlaceholder": "PIN",
     "submit": "Kirjaudu sisään",
     "invalidPin": "Virheellinen PIN-koodi",
-    "bookingExpired": "Varauksesi on päättynyt"
+    "bookingExpired": "Varauksesi on päättynyt",
+    "useEmail": "Käytä sähköpostia",
+    "usePin": "Käytä PIN-koodia",
+    "emailPlaceholder": "Sähköposti"
   },
   "dashboard": {
     "title": "Huoneet",
     "outdoorTemp": "Ulkolämpötila",
     "currentTemp": "Nykyinen",
     "targetTemp": "Tavoite",
-    "humidity": "Kosteus"
+    "humidity": "Kosteus",
+    "loading": "Ladataan..."
   },
   "rooms": {
     "Kodinhoitohuone": "Kodinhoitohuone",
@@ -29,6 +33,13 @@
     "Varasto": "Varasto",
     "Lämminvesivaraaja": "Lämminvesivaraaja",
     "Ilmalämpöpumppu": "Ilmalämpöpumppu"
+  },
+  "controlModes": {
+    "auto": "Automaattinen",
+    "manual": "Manuaalinen",
+    "eco": "Säästävä",
+    "comfort": "Mukava",
+    "off": "Pois päältä"
   },
   "modes": {
     "title": "Pikatilat",
@@ -60,6 +71,18 @@
     "logout": "Kirjaudu ulos",
     "cancel": "Peruuta",
     "confirm": "Vahvista"
+  },
+  "voice": {
+    "notSupported": "Puheentunnistusta ei tueta tässä selaimessa.",
+    "couldNotUnderstand": "Valitettavasti en ymmärtänyt.",
+    "tempResponse": "Olohuoneen nykyinen lämpötila on 21°C. Haluatko säätää sitä?",
+    "awayResponse": "Aktivoidaan poissa-tila. Lämpötila lasketaan 16°C:seen.",
+    "homeResponse": "Aktivoidaan kotona-tila. Lämpötila asetettu 21°C:seen.",
+    "helpResponse": "Voit pyytää minua: muuttamaan lämpötilaa, asettamaan tiloja kuten kotona tai poissa, tai tarkistamaan sään.",
+    "heardResponse": "Kuulin:",
+    "askAbout": "Voit kysyä lämpötilasta, tiloista tai säästä.",
+    "youSaid": "Sanoit:",
+    "tapMic": "Paina mikrofonia ja puhu komento"
   },
   "weather": {
     "clear": "Selkeää",

@@ -82,7 +82,7 @@ const UserLogin = () => {
                 onClick={handleClear}
                 className="min-h-[80px] sm:min-h-[90px] w-full rounded-2xl bg-gray-200 text-gray-800 text-lg sm:text-xl font-bold hover:bg-gray-300 active:scale-95 transition-all shadow-lg border-2 border-gray-300"
               >
-                {t('actions.cancel', 'Peruuta')}
+                {t('actions.cancel')}
               </button>
               <button
                 onClick={() => handlePinClick('0')}
@@ -97,7 +97,7 @@ const UserLogin = () => {
               onClick={() => setUseEmail(true)}
               className="w-full text-lg sm:text-xl text-orange-600 underline font-semibold py-3 hover:text-orange-700"
             >
-              {t('login.useEmail', 'Käytä sähköpostia')}
+              {t('login.useEmail')}
             </button>
           </>
         ) : (
@@ -106,7 +106,7 @@ const UserLogin = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('login.emailPlaceholder', 'Sähköposti')}
+              placeholder={t('login.emailPlaceholder')}
               className="min-h-[80px] w-full rounded-2xl border-4 border-gray-300 text-xl sm:text-2xl px-6 mb-4 bg-white shadow-lg focus:border-orange-500 focus:ring-4 focus:ring-orange-200 transition-all"
               required
             />
@@ -122,7 +122,7 @@ const UserLogin = () => {
               onClick={() => setUseEmail(false)}
               className="min-h-[80px] w-full rounded-2xl bg-gray-200 text-gray-800 text-lg sm:text-xl font-bold hover:bg-gray-300 active:scale-95 transition-all shadow-lg"
             >
-              {t('login.usePin', 'Käytä PIN-koodia')}
+              {t('login.usePin')}
             </button>
           </form>
         )}
