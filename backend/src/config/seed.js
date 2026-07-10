@@ -114,7 +114,7 @@ const seedData = async () => {
       await db.query(
         `INSERT INTO rooms (name, name_fi, name_sv, name_en, shelly_device_id, shelly_device_type, is_critical, critical_min_temp, min_temp, max_temp, target_temp)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT (name) DO NOTHING`,
         [room.name, room.name_fi, room.name_sv, room.name_en, room.shelly_device_id, room.shelly_device_type, room.is_critical, room.critical_min_temp, room.min_temp, room.max_temp, room.target_temp]
       );
     }

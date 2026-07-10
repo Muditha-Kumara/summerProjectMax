@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Rooms table
 CREATE TABLE IF NOT EXISTS rooms (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
+  name VARCHAR(255) UNIQUE NOT NULL,
   name_fi VARCHAR(255),
   name_sv VARCHAR(255),
   name_en VARCHAR(255),

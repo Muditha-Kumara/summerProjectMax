@@ -26,6 +26,46 @@
 }
 
 @layer components {
+  /* Large slider thumb for elderly users */
+  .slider-large-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .slider-large-thumb::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f97316;
+    cursor: pointer;
+    border: 4px solid white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+  }
+
+  .slider-large-thumb::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .slider-large-thumb::-moz-range-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f97316;
+    cursor: pointer;
+    border: 4px solid white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s;
+  }
+
+  .slider-large-thumb::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
   /* Temperature display */
   .temp-display {
     @apply text-5xl font-bold tracking-tight;

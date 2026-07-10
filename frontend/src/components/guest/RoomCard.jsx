@@ -87,8 +87,8 @@ const RoomCard = ({ room }) => {
       </div>
 
       {/* Temperature Slider with +/- Buttons */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
           {/* Minus Button */}
           <button
             onClick={() => {
@@ -96,9 +96,9 @@ const RoomCard = ({ room }) => {
               handleTempChange(newTemp);
               handleTempCommit();
             }}
-            className="w-14 h-14 flex items-center justify-center bg-gray-100 hover:bg-gray-200 
-                       active:bg-gray-300 text-3xl font-bold text-gray-700 rounded-full shadow-sm 
-                       transition-all flex-shrink-0"
+            className="w-20 h-20 flex items-center justify-center bg-gray-100 hover:bg-gray-200 
+                       active:bg-gray-300 text-5xl font-bold text-gray-700 rounded-full shadow-md 
+                       transition-all flex-shrink-0 border-2 border-gray-300"
             aria-label="Decrease temperature"
             disabled={localTarget <= (room.min_temp || 5)}
           >
@@ -115,8 +115,8 @@ const RoomCard = ({ room }) => {
             onChange={(e) => handleTempChange(parseFloat(e.target.value))}
             onMouseUp={handleTempCommit}
             onTouchEnd={handleTempCommit}
-            className="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer 
-                       accent-orange-500"
+            className="flex-1 h-5 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                       accent-orange-500 slider-large-thumb"
             aria-label={t('actions.adjustTemp')}
           />
 
@@ -127,16 +127,16 @@ const RoomCard = ({ room }) => {
               handleTempChange(newTemp);
               handleTempCommit();
             }}
-            className="w-14 h-14 flex items-center justify-center bg-orange-100 hover:bg-orange-200 
-                       active:bg-orange-300 text-3xl font-bold text-orange-700 rounded-full shadow-sm 
-                       transition-all flex-shrink-0"
+            className="w-20 h-20 flex items-center justify-center bg-orange-100 hover:bg-orange-200 
+                       active:bg-orange-300 text-5xl font-bold text-orange-700 rounded-full shadow-md 
+                       transition-all flex-shrink-0 border-2 border-orange-300"
             aria-label="Increase temperature"
             disabled={localTarget >= (room.max_temp || 30)}
           >
             +
           </button>
         </div>
-        <div className="flex justify-between text-base text-gray-500 font-medium">
+        <div className="flex justify-between text-xl text-gray-600 font-bold">
           <span>{room.min_temp || 5}°C</span>
           <span>{room.max_temp || 30}°C</span>
         </div>

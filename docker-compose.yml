@@ -74,6 +74,20 @@ services:
     profiles:
       - prod
 
+  frontend-dev:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - app-net
+    profiles:
+      - dev
+
   seed:
     build:
       context: ./backend
