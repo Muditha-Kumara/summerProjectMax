@@ -11,6 +11,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
   const [departureTime, setDepartureTime] = useState('');
   const [returnTime, setReturnTime] = useState('');
   const [quickDuration, setQuickDuration] = useState(null);
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     const stored = localStorage.getItem('bookingData');
@@ -44,6 +45,7 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
 
   const handleQuickDuration = (hours) => {
     setQuickDuration(hours);
+    setValidationError('');
     
     // Calculate return time based on departure time + hours
     if (departureTime) {
@@ -56,26 +58,66 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
     setQuickDuration(null);
+    setValidationError('');
   };
 
   const handleDepartureTimeChange = (e) => {
-    setDepartureTime(e.target.value);
+    const newDepartureTime = e.target.value;
+    setDepartureTime(newDepartureTime);
     setQuickDuration(null);
+    setValidationError('');
+    
+    // Auto-set minimum return time (30 minutes later)
+    if (newDepartureTime) {
+      const [depHour, depMin] = newDepartureTime.split(':').map(Number);
+      let returnHour = depHour;
+      let returnMin = depMin + 30;
+      
+      // Handle overflow
+      if (returnMin >= 60) {
+        returnMin -= 60;
+        returnHour = (returnHour + 1) % 24;
+      }
+      
+      setReturnTime(`${returnHour.toString().padStart(2, '0')}:${returnMin.toString().padStart(2, '0')}`);
+    }
   };
 
   const handleReturnTimeChange = (e) => {
-    setReturnTime(e.target.value);
+    const newReturnTime = e.target.value;
+    setReturnTime(newReturnTime);
     setQuickDuration(null);
+    setValidationError('');
+    
+    // Validate minimum 30 minutes duration
+    if (departureTime && newReturnTime) {
+      const [depHour, depMin] = departureTime.split(':').map(Number);
+      const [retHour, retMin] = newReturnTime.split(':').map(Number);
+      
+      let durationMinutes = (retHour * 60 + retMin) - (depHour * 60 + depMin);
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60; // Handle overnight
+      }
+      
+      if (durationMinutes < 30) {
+        setValidationError(t('actions.minDurationError', 'Minimum duration is 30 minutes'));
+      }
+    }
   };
 
   const handleConfirm = () => {
-    // Calculate duration in hours
+    // Validate minimum 30 minutes duration
     const [depHour, depMin] = departureTime.split(':').map(Number);
     const [retHour, retMin] = returnTime.split(':').map(Number);
     
     let durationMinutes = (retHour * 60 + retMin) - (depHour * 60 + depMin);
     if (durationMinutes < 0) {
       durationMinutes += 24 * 60; // Handle overnight
+    }
+    
+    if (durationMinutes < 30) {
+      setValidationError(t('actions.minDurationError', 'Minimum duration is 30 minutes'));
+      return;
     }
     
     const durationHours = durationMinutes / 60;
@@ -89,8 +131,13 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
   };
 
   // Get min and max dates from booking
-  const minDate = bookingData?.checkIn ? new Date(bookingData.checkIn).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+  // Min date should be today (current date), not check-in date
+  const today = new Date();
+  const minDate = today.toISOString().split('T')[0];
   const maxDate = bookingData?.checkOut ? new Date(bookingData.checkOut).toISOString().split('T')[0] : '';
+  
+  // Check if selected date is today
+  const isToday = selectedDate === minDate;
 
   return (
     <AnimatePresence>
@@ -115,6 +162,13 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
           <p className="text-2xl sm:text-3xl text-gray-600 text-center font-medium">
             {t('actions.awayDesc')}
           </p>
+
+          {/* Helper Text */}
+          <div className="bg-blue-50 border-4 border-blue-200 rounded-3xl p-6">
+            <p className="text-xl sm:text-2xl text-blue-800 text-center font-medium">
+              💡 {t('actions.helperText', 'Select how long you will be away. Minimum 30 minutes.')}
+            </p>
+          </div>
 
           {/* Quick Duration Selection - Primary Action */}
           <div className="space-y-4">
@@ -143,6 +197,9 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
             <label className="text-2xl sm:text-3xl font-bold text-gray-700 block">
               📅 {t('actions.date')}
             </label>
+            <p className="text-lg sm:text-xl text-gray-600 text-center">
+              {t('actions.dateHelper', 'Choose the day you will be away')}
+            </p>
             <input
               type="date"
               value={selectedDate}
@@ -151,6 +208,11 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
               onChange={handleDateChange}
               className="w-full px-8 py-6 text-3xl sm:text-4xl font-bold border-4 border-orange-300 rounded-3xl focus:border-orange-500 focus:outline-none bg-orange-50"
             />
+            {isToday && (
+              <p className="text-xl sm:text-2xl text-orange-600 text-center font-bold">
+                ✓ {t('actions.today', 'Today')}
+              </p>
+            )}
           </div>
 
           {/* Time Selection - Side by Side */}
@@ -159,6 +221,9 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
               <label className="text-xl sm:text-2xl font-bold text-gray-700 block text-center">
                 🕐 {t('actions.departureTime')}
               </label>
+              <p className="text-base sm:text-lg text-gray-600 text-center">
+                {t('actions.departureHelper', 'When you leave')}
+              </p>
               <input
                 type="time"
                 value={departureTime}
@@ -171,6 +236,9 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
               <label className="text-xl sm:text-2xl font-bold text-gray-700 block text-center">
                 🕐 {t('actions.returnTime')}
               </label>
+              <p className="text-base sm:text-lg text-gray-600 text-center">
+                {t('actions.returnHelper', 'When you come back')}
+              </p>
               <input
                 type="time"
                 value={returnTime}
@@ -180,8 +248,17 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
             </div>
           </div>
 
+          {/* Validation Error */}
+          {validationError && (
+            <div className="bg-red-100 border-4 border-red-500 rounded-3xl p-6">
+              <p className="text-2xl sm:text-3xl font-bold text-red-700 text-center">
+                ⚠️ {validationError}
+              </p>
+            </div>
+          )}
+
           {/* Summary */}
-          {departureTime && returnTime && (
+          {departureTime && returnTime && !validationError && (
             <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-3xl p-6 border-4 border-purple-300">
               <p className="text-2xl sm:text-3xl font-bold text-gray-700 text-center">
                 {t('actions.leaveSummary', 'Poissaolo')}: {departureTime} - {returnTime}
