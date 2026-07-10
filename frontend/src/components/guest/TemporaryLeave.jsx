@@ -22,30 +22,30 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
         onClick={onClose}
       >
         <motion.div
-          className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md space-y-5 max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-lg space-y-6 max-h-[90vh] overflow-y-auto"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 text-center">
             🚶 {t('actions.temporaryLeave')}
           </h2>
           
-          <p className="text-lg sm:text-xl text-gray-600 text-center">
+          <p className="text-xl sm:text-2xl text-gray-600 text-center font-medium">
             {t('actions.temporaryLeaveDesc')}
           </p>
 
           {/* Duration Selection */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {durations.map((hours) => (
               <button
                 key={hours}
                 onClick={() => setSelectedHours(hours)}
-                className={`py-5 rounded-2xl text-xl sm:text-2xl font-bold transition-all min-h-[80px] ${
+                className={`py-6 rounded-2xl text-2xl sm:text-3xl font-bold transition-all min-h-[100px] border-4 ${
                   selectedHours === hours
-                    ? 'bg-orange-500 text-white shadow-lg scale-105'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-300'
+                    ? 'bg-orange-500 text-white shadow-xl scale-105 border-orange-600'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
                 }`}
               >
                 {hours} {t('actions.hours')}
@@ -54,16 +54,16 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-4 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 py-5 rounded-2xl text-lg sm:text-xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all min-h-[70px]"
+              className="flex-1 py-6 rounded-2xl text-xl sm:text-2xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all min-h-[90px] border-4 border-gray-300"
             >
               {t('actions.cancel', 'Peruuta')}
             </button>
             <button
               onClick={handleConfirm}
-              className="flex-1 py-5 rounded-2xl text-lg sm:text-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all min-h-[70px] shadow-lg"
+              className="flex-1 py-6 rounded-2xl text-xl sm:text-2xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all min-h-[90px] shadow-lg border-4 border-orange-600"
             >
               {t('actions.confirm', 'Vahvista')}
             </button>

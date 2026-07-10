@@ -122,8 +122,8 @@ const RoomCard = ({ room }) => {
               aria-label={t('actions.adjustTemp')}
             />
             <div className="flex justify-between w-full text-sm sm:text-base text-gray-600 font-bold mt-2">
-              <span>{room.min_temp || 5}°C</span>
-              <span>{room.max_temp || 30}°C</span>
+              <span>{Math.round(room.min_temp || 5)}°C</span>
+              <span>{Math.round(room.max_temp || 30)}°C</span>
             </div>
           </div>
 

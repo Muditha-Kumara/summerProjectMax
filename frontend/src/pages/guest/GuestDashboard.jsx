@@ -66,45 +66,45 @@ const GuestDashboard = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-6 pb-32"
+      className="space-y-8 sm:space-y-10 pb-32"
     >
       {/* Top Bar with Logout */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-sm sm:text-base text-gray-500">{t('greeting.welcome', 'Tervetuloa')}</p>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 truncate">🏠 {t('app.title', 'Älykäs Lämmitys')}</h1>
+          <p className="text-lg sm:text-xl text-gray-500 font-medium">{t('greeting.welcome', 'Tervetuloa')}</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 truncate">🏠 {t('app.title', 'Älykäs Lämmitys')}</h1>
         </div>
         <motion.button
           onClick={handleLogout}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-2 px-4 py-3 bg-white border-2 border-red-300
-                     text-red-600 font-bold rounded-2xl shadow-sm
-                     hover:bg-red-50 hover:border-red-400 active:scale-95 transition-all min-h-[60px]"
+          className="flex items-center gap-3 px-6 py-4 bg-white border-4 border-red-300
+                     text-red-600 font-bold rounded-2xl shadow-md
+                     hover:bg-red-50 hover:border-red-400 active:scale-95 transition-all min-h-[80px] text-lg sm:text-xl"
         >
-          <span className="text-2xl">🚪</span>
-          <span className="text-base sm:text-lg">{t('actions.logout', 'Kirjaudu ulos')}</span>
+          <span className="text-3xl sm:text-4xl">🚪</span>
+          <span>{t('actions.logout', 'Kirjaudu ulos')}</span>
         </motion.button>
       </div>
 
       {/* Outdoor Weather Banner */}
       {outdoorTemp !== null && (
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl p-5 sm:p-6 shadow-lg">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-3xl p-6 sm:p-8 shadow-lg">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-base sm:text-lg opacity-90 font-medium">{t('dashboard.outdoorTemp')}</p>
-              <p className="text-4xl sm:text-5xl font-bold">{Math.round(outdoorTemp)}°C</p>
+              <p className="text-xl sm:text-2xl opacity-90 font-medium mb-2">{t('dashboard.outdoorTemp')}</p>
+              <p className="text-5xl sm:text-6xl lg:text-7xl font-bold">{Math.round(outdoorTemp)}°C</p>
             </div>
             {weather && (
               <div className="text-right">
-                <p className="text-5xl sm:text-6xl">
+                <p className="text-6xl sm:text-7xl lg:text-8xl">
                   {weather.icon?.includes('01') ? '☀️' : 
                    weather.icon?.includes('02') ? '⛅' :
                    weather.icon?.includes('03') ? '☁️' :
                    weather.icon?.includes('09') || weather.icon?.includes('10') ? '🌧️' :
                    weather.icon?.includes('13') ? '❄️' : '🌡️'}
                 </p>
-                <p className="text-base sm:text-lg capitalize mt-2 font-medium">{weather.description}</p>
+                <p className="text-xl sm:text-2xl capitalize mt-3 font-medium">{weather.description}</p>
               </div>
             )}
           </div>
@@ -117,18 +117,18 @@ const GuestDashboard = () => {
       {/* Temporary Leave Button */}
       <button
         onClick={() => setShowLeaveModal(true)}
-        className="w-full bg-orange-500 text-white text-xl sm:text-2xl font-bold py-5 sm:py-6 rounded-2xl 
+        className="w-full bg-orange-500 text-white text-2xl sm:text-3xl font-bold py-6 sm:py-8 rounded-3xl 
                    shadow-lg hover:bg-orange-600 active:scale-[0.98] transition-all
-                   flex items-center justify-center gap-3 min-h-[80px]"
+                   flex items-center justify-center gap-4 min-h-[100px] border-4 border-orange-600"
       >
-        <span className="text-3xl sm:text-4xl">🚶</span>
+        <span className="text-4xl sm:text-5xl">🚶</span>
         {t('actions.temporaryLeave')}
       </button>
 
       {/* Room Cards */}
       <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 px-1">{t('dashboard.title')}</h2>
-        <div className="space-y-4">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 px-1">{t('dashboard.title')}</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {rooms.map((room) => (
             <RoomCard key={room.id} room={room} />
           ))}

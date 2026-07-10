@@ -75,13 +75,13 @@ const VoiceAssistant = () => {
     <>
       {/* Floating Mic Button */}
       <motion.button
-        className={`voice-btn ${isListening ? 'listening' : ''}`}
+        className={`voice-btn ${isListening ? 'listening' : ''} w-24 h-24 sm:w-28 sm:h-28`}
         onClick={startListening}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         aria-label={t('actions.voiceAssistant')}
       >
-        <span className="text-4xl">
+        <span className="text-5xl sm:text-6xl">
           {isListening ? '🔴' : '🎤'}
         </span>
       </motion.button>
@@ -90,47 +90,48 @@ const VoiceAssistant = () => {
       <AnimatePresence>
         {showPanel && (
           <motion.div
-            className="fixed bottom-32 right-8 w-80 bg-white rounded-3xl shadow-2xl p-6 z-40"
+            className="fixed bottom-32 right-4 sm:right-8 w-[calc(100%-2rem)] sm:w-96 bg-white rounded-3xl shadow-2xl p-6 z-40 border-4 border-primary-200"
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-2xl font-bold text-gray-800">
                 🎤 {t('actions.voiceAssistant')}
               </h3>
               <button
                 onClick={() => setShowPanel(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="text-gray-400 hover:text-gray-600 text-3xl w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100"
+                aria-label="Close voice assistant"
               >
                 ✕
               </button>
             </div>
 
             {isListening && (
-              <div className="text-center py-4">
-                <div className="text-4xl animate-pulse mb-2">🎙️</div>
-                <p className="text-lg text-primary-600 font-semibold">
+              <div className="text-center py-6">
+                <div className="text-5xl animate-pulse mb-3">🎙️</div>
+                <p className="text-xl text-primary-600 font-semibold">
                   {t('actions.listening')}
                 </p>
               </div>
             )}
 
             {transcript && (
-              <div className="bg-gray-100 rounded-xl p-3 mb-3">
-                <p className="text-sm text-gray-500">You said:</p>
-                <p className="text-lg font-medium text-gray-800">"{transcript}"</p>
+              <div className="bg-gray-100 rounded-xl p-4 mb-3">
+                <p className="text-lg text-gray-500 mb-1">You said:</p>
+                <p className="text-xl font-medium text-gray-800">"{transcript}"</p>
               </div>
             )}
 
             {response && (
-              <div className="bg-primary-50 rounded-xl p-3">
-                <p className="text-lg text-primary-800">{response}</p>
+              <div className="bg-primary-50 rounded-xl p-4">
+                <p className="text-xl text-primary-800">{response}</p>
               </div>
             )}
 
             {!isListening && !transcript && !response && (
-              <p className="text-gray-500 text-center py-4">
+              <p className="text-gray-500 text-center py-6 text-lg">
                 Tap the microphone and speak a command
               </p>
             )}
