@@ -164,145 +164,153 @@ const TemporaryLeave = ({ onClose, onConfirm }) => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-0 sm:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
         <motion.div
-          className="bg-white rounded-3xl p-8 sm:p-10 w-full max-w-3xl space-y-8 max-h-[90vh] overflow-y-auto"
-          initial={{ scale: 0.9, opacity: 0 }}
+          className="bg-white rounded-none sm:rounded-3xl w-full sm:max-w-2xl h-full sm:h-auto max-h-screen sm:max-h-[95vh] overflow-y-auto"
+          initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
+          exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-800 text-center">
-            🚗 {t('actions.away')}
-          </h2>
-          
-          <p className="text-2xl sm:text-3xl text-gray-600 text-center font-medium">
-            {t('actions.awayDesc')}
-          </p>
-
-          {/* Helper Text */}
-          <div className="bg-blue-50 border-4 border-blue-200 rounded-3xl p-6">
-            <p className="text-xl sm:text-2xl text-blue-800 text-center font-medium">
-              💡 {t('actions.helperText', 'Select how long you will be away. Minimum 30 minutes.')}
-            </p>
-          </div>
-
-          {/* Quick Duration Selection - Primary Action */}
-          <div className="space-y-4">
-            <label className="text-2xl sm:text-3xl font-bold text-gray-700 block text-center">
-              {t('actions.quickDuration')}
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              {quickDurations.map(({ hours, label }) => (
-                <button
-                  key={hours}
-                  onClick={() => handleQuickDuration(hours)}
-                  className={`py-8 rounded-3xl text-3xl sm:text-4xl font-bold transition-all min-h-[120px] border-4 ${
-                    quickDuration === hours
-                      ? 'bg-orange-500 text-white shadow-2xl scale-105 border-orange-600'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Date Selection */}
-          <div className="space-y-4">
-            <label className="text-2xl sm:text-3xl font-bold text-gray-700 block">
-              📅 {t('actions.date')}
-            </label>
-            <p className="text-lg sm:text-xl text-gray-600 text-center">
-              {t('actions.dateHelper', 'Choose the day you will be away')}
-            </p>
-            <input
-              type="date"
-              value={selectedDate}
-              min={minDate}
-              max={maxDate}
-              onChange={handleDateChange}
-              className="w-full px-8 py-6 text-3xl sm:text-4xl font-bold border-4 border-orange-300 rounded-3xl focus:border-orange-500 focus:outline-none bg-orange-50"
-            />
-            {isToday && (
-              <p className="text-xl sm:text-2xl text-orange-600 text-center font-bold">
-                ✓ {t('actions.today', 'Today')}
+          <div className="p-6 sm:p-8 space-y-6 sm:space-y-8">
+            {/* Header */}
+            <div className="text-center space-y-3">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                🚗 {t('actions.away')}
+              </h2>
+              <p className="text-xl sm:text-2xl text-gray-700 font-medium">
+                {t('actions.awayDesc')}
               </p>
+            </div>
+
+            {/* Helper Text */}
+            <div className="bg-blue-50 border-4 border-blue-300 rounded-2xl p-5">
+              <p className="text-lg sm:text-xl text-blue-900 text-center font-semibold leading-relaxed">
+                💡 {t('actions.helperText', 'Select how long you will be away. Minimum 30 minutes.')}
+              </p>
+            </div>
+
+            {/* Quick Duration Selection */}
+            <div className="space-y-3">
+              <label className="text-xl sm:text-2xl font-bold text-gray-800 block text-center">
+                {t('actions.quickDuration')}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {quickDurations.map(({ hours, label }) => (
+                  <button
+                    key={hours}
+                    onClick={() => handleQuickDuration(hours)}
+                    className={`py-6 sm:py-7 rounded-2xl text-2xl sm:text-3xl font-bold transition-all min-h-[80px] sm:min-h-[100px] border-4 ${
+                      quickDuration === hours
+                        ? 'bg-orange-500 text-white shadow-lg scale-105 border-orange-600'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300'
+                    }`}
+                    aria-pressed={quickDuration === hours}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date Selection */}
+            <div className="space-y-3">
+              <label className="text-xl sm:text-2xl font-bold text-gray-800 block text-center">
+                📅 {t('actions.date')}
+              </label>
+              <p className="text-base sm:text-lg text-gray-600 text-center">
+                {t('actions.dateHelper', 'Choose the day you will be away')}
+              </p>
+              <input
+                type="date"
+                value={selectedDate}
+                min={minDate}
+                max={maxDate}
+                onChange={handleDateChange}
+                className="w-full px-5 py-5 text-2xl sm:text-3xl font-bold border-4 border-orange-400 rounded-2xl focus:border-orange-600 focus:outline-none bg-orange-50 text-gray-900"
+                aria-label="Select date"
+              />
+              {isToday && (
+                <p className="text-lg sm:text-xl text-orange-700 text-center font-bold">
+                  ✓ {t('actions.today', 'Today')}
+                </p>
+              )}
+            </div>
+
+            {/* Time Selection - Stacked on mobile, side-by-side on larger screens */}
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <label className="text-xl sm:text-2xl font-bold text-gray-800 block text-center">
+                  🕐 {t('actions.departureTime')}
+                </label>
+                <p className="text-base sm:text-lg text-gray-600 text-center">
+                  {t('actions.departureHelper', 'When you leave')}
+                </p>
+                <input
+                  type="time"
+                  value={departureTime}
+                  onChange={handleDepartureTimeChange}
+                  className="w-full px-5 py-5 text-2xl sm:text-3xl font-bold border-4 border-blue-400 rounded-2xl focus:border-blue-600 focus:outline-none bg-blue-50 text-gray-900"
+                  aria-label="Departure time"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-xl sm:text-2xl font-bold text-gray-800 block text-center">
+                  🕐 {t('actions.returnTime')}
+                </label>
+                <p className="text-base sm:text-lg text-gray-600 text-center">
+                  {t('actions.returnHelper', 'When you come back')}
+                </p>
+                <input
+                  type="time"
+                  value={returnTime}
+                  onChange={handleReturnTimeChange}
+                  className="w-full px-5 py-5 text-2xl sm:text-3xl font-bold border-4 border-green-400 rounded-2xl focus:border-green-600 focus:outline-none bg-green-50 text-gray-900"
+                  aria-label="Return time"
+                />
+              </div>
+            </div>
+
+            {/* Validation Error */}
+            {validationError && (
+              <div className="bg-red-50 border-4 border-red-500 rounded-2xl p-5">
+                <p className="text-xl sm:text-2xl font-bold text-red-800 text-center leading-relaxed">
+                  ⚠️ {validationError}
+                </p>
+              </div>
             )}
-          </div>
 
-          {/* Time Selection - Side by Side */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <label className="text-xl sm:text-2xl font-bold text-gray-700 block text-center">
-                🕐 {t('actions.departureTime')}
-              </label>
-              <p className="text-base sm:text-lg text-gray-600 text-center">
-                {t('actions.departureHelper', 'When you leave')}
-              </p>
-              <input
-                type="time"
-                value={departureTime}
-                onChange={handleDepartureTimeChange}
-                className="w-full px-6 py-6 text-2xl sm:text-3xl font-bold border-4 border-blue-300 rounded-3xl focus:border-blue-500 focus:outline-none bg-blue-50"
-              />
+            {/* Summary */}
+            {departureTime && returnTime && !validationError && (
+              <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl p-5 border-4 border-purple-400">
+                <p className="text-xl sm:text-2xl font-bold text-gray-800 text-center">
+                  {t('actions.leaveSummary', 'Poissaolo')}: {departureTime} - {returnTime}
+                </p>
+              </div>
+            )}
+
+            {/* Action Buttons - Stacked on mobile */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
+              <button
+                onClick={onClose}
+                className="w-full py-6 sm:py-7 rounded-2xl text-xl sm:text-2xl font-bold bg-gray-200 text-gray-800 hover:bg-gray-300 transition-all min-h-[70px] sm:min-h-[80px] border-4 border-gray-400 active:bg-gray-400"
+              >
+                {t('actions.cancel', 'Peruuta')}
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={!selectedDate || !departureTime || !returnTime}
+                className="w-full py-6 sm:py-7 rounded-2xl text-xl sm:text-2xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all min-h-[70px] sm:min-h-[80px] shadow-lg border-4 border-orange-600 disabled:bg-gray-300 disabled:border-gray-400 disabled:text-gray-500 disabled:cursor-not-allowed active:bg-orange-700"
+              >
+                {t('actions.confirm', 'Vahvista')}
+              </button>
             </div>
-
-            <div className="space-y-4">
-              <label className="text-xl sm:text-2xl font-bold text-gray-700 block text-center">
-                🕐 {t('actions.returnTime')}
-              </label>
-              <p className="text-base sm:text-lg text-gray-600 text-center">
-                {t('actions.returnHelper', 'When you come back')}
-              </p>
-              <input
-                type="time"
-                value={returnTime}
-                onChange={handleReturnTimeChange}
-                className="w-full px-6 py-6 text-2xl sm:text-3xl font-bold border-4 border-green-300 rounded-3xl focus:border-green-500 focus:outline-none bg-green-50"
-              />
-            </div>
-          </div>
-
-          {/* Validation Error */}
-          {validationError && (
-            <div className="bg-red-100 border-4 border-red-500 rounded-3xl p-6">
-              <p className="text-2xl sm:text-3xl font-bold text-red-700 text-center">
-                ⚠️ {validationError}
-              </p>
-            </div>
-          )}
-
-          {/* Summary */}
-          {departureTime && returnTime && !validationError && (
-            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-3xl p-6 border-4 border-purple-300">
-              <p className="text-2xl sm:text-3xl font-bold text-gray-700 text-center">
-                {t('actions.leaveSummary', 'Poissaolo')}: {departureTime} - {returnTime}
-              </p>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-4 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 py-8 rounded-3xl text-2xl sm:text-3xl font-bold bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all min-h-[100px] border-4 border-gray-300"
-            >
-              {t('actions.cancel', 'Peruuta')}
-            </button>
-            <button
-              onClick={handleConfirm}
-              disabled={!selectedDate || !departureTime || !returnTime}
-              className="flex-1 py-8 rounded-3xl text-2xl sm:text-3xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-all min-h-[100px] shadow-xl border-4 border-orange-600 disabled:bg-gray-300 disabled:border-gray-400 disabled:cursor-not-allowed"
-            >
-              {t('actions.confirm', 'Vahvista')}
-            </button>
           </div>
         </motion.div>
       </motion.div>

@@ -15,9 +15,7 @@ const RoomCard = ({ room }) => {
 
   const handleTempCommit = async () => {
     const result = await updateRoomTemp(room.id, localTarget);
-    if (result.success) {
-      toast.success(t('alerts.tempUpdated'));
-    } else {
+    if (!result.success) {
       toast.error(result.message || t('alerts.error'));
       setLocalTarget(Math.round(room.target_temp));
     }

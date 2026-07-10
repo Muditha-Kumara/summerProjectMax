@@ -28,7 +28,6 @@ const GuestDashboard = () => {
     try {
       const response = await api.post(`/optimization/quick-mode/${mode}`);
       if (response.data.success) {
-        toast.success(t('alerts.modeChanged'));
         fetchRooms();
       }
     } catch (error) {
@@ -46,7 +45,6 @@ const GuestDashboard = () => {
           durationHours: leaveData.durationHours
         });
       }
-      toast.success(t('alerts.leaveActivated'));
       setShowLeaveModal(false);
       fetchRooms();
     } catch (error) {

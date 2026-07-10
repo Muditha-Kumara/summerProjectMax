@@ -43,7 +43,6 @@ const UserLogin = () => {
       const result = await authService.loginUser(pinCode);
       
       if (result.success) {
-        toast.success(t('login.title') + '!');
         navigate('/dashboard');
       } else {
         toast.error(result.message || t('login.invalidPin'));

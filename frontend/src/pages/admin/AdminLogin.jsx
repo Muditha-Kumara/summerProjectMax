@@ -27,7 +27,6 @@ const AdminLogin = () => {
       const result = await authService.loginAdmin(formData.email, formData.password);
 
       if (result.success) {
-        toast.success('Welcome back, Admin!');
         navigate('/admin/dashboard');
       } else {
         toast.error(result.message || 'Invalid credentials');
