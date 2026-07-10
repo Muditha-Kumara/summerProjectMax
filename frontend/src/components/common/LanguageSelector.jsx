@@ -20,7 +20,7 @@ const LanguageSelector = () => {
         <button
           key={lang.code}
           onClick={() => changeLanguage(lang.code)}
-          className={`lang-btn text-2xl ${
+          className={`lang-btn text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 ${
             i18n.language === lang.code ? 'active' : ''
           }`}
           aria-label={lang.name}

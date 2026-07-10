@@ -19,20 +19,23 @@ const QuickModes = ({ onModeChange }) => {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-3">
-      {modes.map((mode) => (
-        <motion.button
-          key={mode.id}
-          onClick={() => handleModeClick(mode.id)}
-          className={`mode-btn ${activeMode === mode.id ? 'active' : ''}`}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          aria-pressed={activeMode === mode.id}
-        >
-          <span className="text-4xl">{mode.icon}</span>
-          <span className="text-base font-semibold">{mode.label}</span>
-        </motion.button>
-      ))}
+    <div className="space-y-3">
+      <h2 className="text-lg sm:text-xl font-bold text-gray-800 px-2">{t('modes.title', 'Pikatilat')}</h2>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        {modes.map((mode) => (
+          <motion.button
+            key={mode.id}
+            onClick={() => handleModeClick(mode.id)}
+            className={`mode-btn ${activeMode === mode.id ? 'active' : ''} min-h-[100px]`}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            aria-pressed={activeMode === mode.id}
+          >
+            <span className="text-5xl sm:text-6xl">{mode.icon}</span>
+            <span className="text-lg sm:text-xl font-bold">{mode.label}</span>
+          </motion.button>
+        ))}
+      </div>
     </div>
   );
 };

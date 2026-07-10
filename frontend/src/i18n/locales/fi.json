@@ -3,6 +3,9 @@
     "title": "Älykäs Lämmitys",
     "subtitle": "Kesämökki"
   },
+  "greeting": {
+    "welcome": "Tervetuloa"
+  },
   "login": {
     "title": "Tervetuloa",
     "subtitle": "Syötä PIN-koodisi",
@@ -28,6 +31,7 @@
     "Ilmalämpöpumppu": "Ilmalämpöpumppu"
   },
   "modes": {
+    "title": "Pikatilat",
     "home": "Kotona",
     "away": "Poissa",
     "eco": "Säästävä",
@@ -39,7 +43,10 @@
     "hours": "tuntia",
     "voiceAssistant": "Puheavustaja",
     "listening": "Kuunnellaan...",
-    "adjustTemp": "Säädä lämpötilaa"
+    "adjustTemp": "Säädä lämpötilaa",
+    "logout": "Kirjaudu ulos",
+    "cancel": "Peruuta",
+    "confirm": "Vahvista"
   },
   "weather": {
     "clear": "Selkeää",

@@ -45,50 +45,51 @@ const RoomCard = ({ room }) => {
 
   return (
     <motion.div 
-      className={`bg-white p-6 rounded-3xl shadow-md border border-gray-100 space-y-5 ${room.is_critical ? 'border-red-300' : ''}`}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      className={`bg-white p-4 sm:p-6 rounded-3xl shadow-md border-2 ${room.is_critical ? 'border-red-400 bg-red-50' : 'border-gray-200'} space-y-4`}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
     >
       {/* Room Header */}
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-4xl flex-shrink-0">{getRoomIcon(room.name)}</span>
-          <div className="min-w-0">
-            <h3 className="text-xl font-bold text-gray-900 break-words leading-tight">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <span className="text-4xl sm:text-5xl flex-shrink-0">{getRoomIcon(room.name)}</span>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 break-words leading-tight">
               {t(`rooms.${room.name}`, room.name)}
             </h3>
-            <p className="text-base text-gray-600 capitalize break-words">
+            <p className="text-sm sm:text-base text-gray-600 capitalize break-words">
               {room.control_mode}
             </p>
           </div>
         </div>
         {room.is_critical && (
-          <span className="bg-red-100 text-red-700 text-base font-bold px-3 py-1 rounded-full flex-shrink-0">
+          <span className="bg-red-200 text-red-800 text-sm font-bold px-3 py-2 rounded-full flex-shrink-0">
             ⚠️
           </span>
         )}
       </div>
 
-      {/* Temperature Display */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-base text-gray-600 font-medium">{t('dashboard.currentTemp')}</p>
-          <p className={`text-4xl font-bold ${getTempColor(room.current_temp || 0)}`}>
+      {/* Temperature Display - Stacked for mobile */}
+      <div className="flex items-center justify-around bg-gradient-to-r from-blue-50 to-orange-50 rounded-2xl p-4">
+        <div className="text-center">
+          <p className="text-sm sm:text-base text-gray-600 font-semibold mb-1">{t('dashboard.currentTemp')}</p>
+          <p className={`text-3xl sm:text-4xl font-bold ${getTempColor(room.current_temp || 0)}`}>
             {room.current_temp ? Math.round(room.current_temp) : '--'}
-            <span className="text-2xl">°C</span>
+            <span className="text-lg sm:text-xl">°C</span>
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-base text-gray-600 font-medium">{t('dashboard.targetTemp')}</p>
-          <p className="text-4xl font-bold text-primary-600">
-            {Math.round(localTarget)}°C
+        <div className="w-px h-12 bg-gray-300"></div>
+        <div className="text-center">
+          <p className="text-sm sm:text-base text-gray-600 font-semibold mb-1">{t('dashboard.targetTemp')}</p>
+          <p className="text-3xl sm:text-4xl font-bold text-orange-600">
+            {Math.round(localTarget)}<span className="text-lg sm:text-xl">°C</span>
           </p>
         </div>
       </div>
 
       {/* Temperature Slider with +/- Buttons */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Minus Button */}
           <button
             onClick={() => {
@@ -96,9 +97,9 @@ const RoomCard = ({ room }) => {
               handleTempChange(newTemp);
               handleTempCommit();
             }}
-            className="w-20 h-20 flex items-center justify-center bg-gray-100 hover:bg-gray-200 
-                       active:bg-gray-300 text-5xl font-bold text-gray-700 rounded-full shadow-md 
-                       transition-all flex-shrink-0 border-2 border-gray-300"
+            className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-blue-100 hover:bg-blue-200 
+                       active:bg-blue-300 text-4xl sm:text-5xl font-bold text-blue-700 rounded-full shadow-md 
+                       transition-all flex-shrink-0 border-4 border-blue-300"
             aria-label="Decrease temperature"
             disabled={localTarget <= (room.min_temp || 5)}
           >
@@ -106,19 +107,25 @@ const RoomCard = ({ room }) => {
           </button>
 
           {/* Slider */}
-          <input
-            type="range"
-            min={room.min_temp || 5}
-            max={room.max_temp || 30}
-            step={1}
-            value={localTarget}
-            onChange={(e) => handleTempChange(parseFloat(e.target.value))}
-            onMouseUp={handleTempCommit}
-            onTouchEnd={handleTempCommit}
-            className="flex-1 h-5 bg-gray-200 rounded-lg appearance-none cursor-pointer 
-                       accent-orange-500 slider-large-thumb"
-            aria-label={t('actions.adjustTemp')}
-          />
+          <div className="flex-1 flex flex-col items-center">
+            <input
+              type="range"
+              min={room.min_temp || 5}
+              max={room.max_temp || 30}
+              step={1}
+              value={localTarget}
+              onChange={(e) => handleTempChange(parseFloat(e.target.value))}
+              onMouseUp={handleTempCommit}
+              onTouchEnd={handleTempCommit}
+              className="w-full h-3 sm:h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer 
+                         accent-orange-500 slider-large-thumb"
+              aria-label={t('actions.adjustTemp')}
+            />
+            <div className="flex justify-between w-full text-sm sm:text-base text-gray-600 font-bold mt-2">
+              <span>{room.min_temp || 5}°C</span>
+              <span>{room.max_temp || 30}°C</span>
+            </div>
+          </div>
 
           {/* Plus Button */}
           <button
@@ -127,26 +134,22 @@ const RoomCard = ({ room }) => {
               handleTempChange(newTemp);
               handleTempCommit();
             }}
-            className="w-20 h-20 flex items-center justify-center bg-orange-100 hover:bg-orange-200 
-                       active:bg-orange-300 text-5xl font-bold text-orange-700 rounded-full shadow-md 
-                       transition-all flex-shrink-0 border-2 border-orange-300"
+            className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-orange-100 hover:bg-orange-200 
+                       active:bg-orange-300 text-4xl sm:text-5xl font-bold text-orange-700 rounded-full shadow-md 
+                       transition-all flex-shrink-0 border-4 border-orange-300"
             aria-label="Increase temperature"
             disabled={localTarget >= (room.max_temp || 30)}
           >
             +
           </button>
         </div>
-        <div className="flex justify-between text-xl text-gray-600 font-bold">
-          <span>{room.min_temp || 5}°C</span>
-          <span>{room.max_temp || 30}°C</span>
-        </div>
       </div>
 
       {/* Humidity */}
       {room.humidity && (
-        <div className="mt-4 pt-4 border-t border-gray-200 flex items-center gap-3">
+        <div className="pt-3 border-t-2 border-gray-200 flex items-center justify-center gap-3">
           <span className="text-2xl">💧</span>
-          <span className="text-xl text-gray-700 font-medium">{room.humidity}%</span>
+          <span className="text-lg sm:text-xl text-gray-700 font-semibold">{t('dashboard.humidity')}: {room.humidity}%</span>
         </div>
       )}
     </motion.div>

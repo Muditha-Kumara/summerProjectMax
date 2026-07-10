@@ -5,13 +5,14 @@
 /* Elderly-friendly base styles */
 @layer base {
   html {
-    font-size: 20px;
+    font-size: 18px;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-gray-50 text-gray-900 antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
   }
 
   /* High contrast focus styles */
@@ -30,40 +31,51 @@
   .slider-large-thumb {
     -webkit-appearance: none;
     appearance: none;
+    background: transparent;
   }
 
   .slider-large-thumb::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: #f97316;
     cursor: pointer;
-    border: 4px solid white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 5px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: all 0.2s;
   }
 
   .slider-large-thumb::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.15);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .slider-large-thumb::-webkit-slider-thumb:active {
+    transform: scale(1.05);
+    background: #ea580c;
   }
 
   .slider-large-thumb::-moz-range-thumb {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: #f97316;
     cursor: pointer;
-    border: 4px solid white;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 5px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: all 0.2s;
   }
 
   .slider-large-thumb::-moz-range-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.15);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .slider-large-thumb::-moz-range-thumb:active {
+    transform: scale(1.05);
+    background: #ea580c;
   }
 
   /* Temperature display */
@@ -87,16 +99,16 @@
 
   /* Quick mode button */
   .mode-btn {
-    @apply flex flex-col items-center justify-center gap-2 
-           min-h-touch-lg px-6 py-4 rounded-2xl 
-           bg-white shadow-md border-2 border-gray-200
-           hover:border-primary-500 hover:bg-primary-50
+    @apply flex flex-col items-center justify-center gap-3 
+           min-h-[100px] px-4 py-5 rounded-3xl 
+           bg-white shadow-lg border-4 border-gray-200
+           hover:border-orange-400 hover:bg-orange-50
            active:scale-95 transition-all duration-150
-           text-xl font-semibold;
+           text-lg font-bold;
   }
 
   .mode-btn.active {
-    @apply bg-primary-500 text-white border-primary-500 shadow-lg;
+    @apply bg-orange-500 text-white border-orange-500 shadow-xl scale-105;
   }
 
   /* Language selector */
