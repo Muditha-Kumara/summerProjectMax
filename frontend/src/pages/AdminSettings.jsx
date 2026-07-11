@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api from '../api';
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('apiKeys');
@@ -76,7 +76,6 @@ function ApiKeysTab() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [testingEmail, setTestingEmail] = useState(false);
 
   useEffect(() => {
     fetchKeys();
@@ -108,24 +107,6 @@ function ApiKeysTab() {
       setError(err.response?.data?.message || 'Failed to update API keys');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleTestEmail = async () => {
-    setTestingEmail(true);
-    setMessage('');
-    setError('');
-    try {
-      const { data } = await api.post('/settings/test-email', { email: keys.smtpUser });
-      if (data.success) {
-        setMessage(data.message);
-      } else {
-        setError(data.message);
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send test email');
-    } finally {
-      setTestingEmail(false);
     }
   };
 
@@ -403,19 +384,6 @@ function ApiKeysTab() {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </div>
-            <div className="md:col-span-2">
-              <button
-                type="button"
-                onClick={handleTestEmail}
-                disabled={testingEmail || !keys.smtpHost || !keys.smtpUser}
-                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {testingEmail ? 'Sending Test Email...' : 'Send Test Email'}
-              </button>
-              <p className="text-xs text-gray-500 mt-1">
-                Save your SMTP settings first, then click to verify they work
-              </p>
             </div>
           </div>
         </div>

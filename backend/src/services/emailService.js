@@ -1,10 +1,45 @@
 import nodemailer from 'nodemailer';
 import config from '../config/index.js';
 import logger from '../utils/logger.js';
+import SystemSettings from '../models/SystemSettings.js';
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
+    this.transporter = null;
+  }
+
+  async getTransporter() {
+    // Try to load SMTP settings from database first
+    try {
+      const settings = await SystemSettings.getAll();
+      const settingsMap = {};
+      settings.forEach(s => {
+        settingsMap[s.key] = s.value;
+      });
+
+      const smtpHost = settingsMap.smtp_host || config.email.host;
+      const smtpPort = parseInt(settingsMap.smtp_port || config.email.port, 10);
+      const smtpSecure = settingsMap.smtp_secure === 'true';
+      const smtpUser = settingsMap.smtp_user || config.email.user;
+      const smtpPass = settingsMap.smtp_pass || config.email.pass;
+
+      if (smtpHost && smtpUser && smtpPass) {
+        return nodemailer.createTransport({
+          host: smtpHost,
+          port: smtpPort,
+          secure: smtpSecure,
+          auth: {
+            user: smtpUser,
+            pass: smtpPass
+          }
+        });
+      }
+    } catch (error) {
+      logger.warn('Failed to load SMTP settings from database, using env config', error);
+    }
+
+    // Fallback to env config
+    return nodemailer.createTransport({
       host: config.email.host,
       port: config.email.port,
       secure: config.email.secure,
@@ -15,12 +50,27 @@ class EmailService {
     });
   }
 
+  async getFromAddress() {
+    try {
+      const settings = await SystemSettings.getAll();
+      const settingsMap = {};
+      settings.forEach(s => {
+        settingsMap[s.key] = s.value;
+      });
+      return settingsMap.smtp_from || config.email.from;
+    } catch (error) {
+      return config.email.from;
+    }
+  }
+
   async sendBookingConfirmation(booking) {
     try {
+      const transporter = await this.getTransporter();
+      const fromAddress = await this.getFromAddress();
       const bookingUrl = `${config.frontendUrl}/?pin=${booking.pin}`;
       
       const mailOptions = {
-        from: config.email.from,
+        from: fromAddress,
         to: booking.guest_email,
         subject: 'Your Smart Heating Access - Booking Confirmation',
         html: `
@@ -63,7 +113,7 @@ class EmailService {
         `
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       logger.info('Booking confirmation email sent', { messageId: info.messageId, to: booking.guest_email });
       
       return {
@@ -81,8 +131,11 @@ class EmailService {
 
   async sendTemperatureAlert(room, currentTemp, threshold) {
     try {
+      const transporter = await this.getTransporter();
+      const fromAddress = await this.getFromAddress();
+      
       const mailOptions = {
-        from: config.email.from,
+        from: fromAddress,
         to: config.email.user, // Send to admin
         subject: `⚠️ Temperature Alert: ${room.name}`,
         html: `
@@ -109,7 +162,7 @@ class EmailService {
         `
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
+      const info = await transporter.sendMail(mailOptions);
       logger.info('Temperature alert email sent', { messageId: info.messageId, room: room.name });
       
       return {

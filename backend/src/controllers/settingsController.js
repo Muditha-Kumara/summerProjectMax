@@ -122,6 +122,46 @@ class SettingsController {
   }
 
   /**
+   * POST /api/v1/settings/test-email
+   * Send a test email to verify SMTP settings
+   */
+  static async testEmail(req, res) {
+    try {
+      const EmailService = (await import('../services/emailService.js')).default;
+      
+      const testEmail = {
+        guest_email: req.body.email || req.user?.email,
+        guest_name: 'Test User',
+        pin: '1234',
+        check_in: new Date(),
+        check_out: new Date(Date.now() + 86400000)
+      };
+
+      if (!testEmail.guest_email) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No email address provided' 
+        });
+      }
+
+      const result = await EmailService.sendBookingConfirmation(testEmail);
+      
+      res.json({ 
+        success: result.success, 
+        message: result.success 
+          ? 'Test email sent successfully! Check your inbox.' 
+          : `Failed to send email: ${result.message}` 
+      });
+    } catch (error) {
+      logger.error('Test email failed', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Test email failed: ${error.message}` 
+      });
+    }
+  }
+
+  /**
    * GET /api/v1/settings/mapping
    * Get device mappings
    */

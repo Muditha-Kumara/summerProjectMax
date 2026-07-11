@@ -14,6 +14,9 @@ router.get('/', settingsController.getAll);
 router.get('/keys', settingsController.getKeys);
 router.put('/keys', settingsController.updateKeys);
 
+// Test email
+router.post('/test-email', settingsController.testEmail);
+
 // Device mappings
 router.get('/mapping', settingsController.getMappings);
 router.put('/mapping', settingsController.updateMappings);
