@@ -15,6 +15,8 @@ import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/roomRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import optimizationRoutes from './routes/optimizationRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 
 // Cron jobs
 import cronJobs from './cron/jobs.js';
@@ -68,6 +70,8 @@ app.use(`${config.apiPrefix}/auth`, authRoutes);
 app.use(`${config.apiPrefix}/rooms`, roomRoutes);
 app.use(`${config.apiPrefix}/bookings`, bookingRoutes);
 app.use(`${config.apiPrefix}/optimization`, optimizationRoutes);
+app.use(`${config.apiPrefix}/ai`, aiRoutes);
+app.use(`${config.apiPrefix}/settings`, settingsRoutes);
 
 // Error handling
 app.use(notFound);
