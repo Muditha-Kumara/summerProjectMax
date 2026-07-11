@@ -54,6 +54,7 @@ const config = {
   nordPool: {
     apiUrl: process.env.NORD_POOL_API_URL || 'https://www.nordpoolgroup.com/api/marketdata',
     area: process.env.NORD_POOL_AREA || 'FI',
+    useMockPrices: process.env.USE_MOCK_PRICES === 'true',
   },
 
   // OpenWeatherMap

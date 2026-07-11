@@ -7,39 +7,79 @@ class NordPoolService {
   constructor() {
     this.apiUrl = config.nordPool.apiUrl;
     this.area = config.nordPool.area;
+    this.useMockPrices = config.nordPool.useMockPrices;
+  }
+
+  /**
+   * Generate realistic mock spot prices (EUR/MWh) for testing.
+   * Simulates a typical Finnish day-ahead price curve:
+   *  - Cheap at night (00–06)
+   *  - Morning peak (07–09)
+   *  - Midday dip
+   *  - Evening peak (17–20)
+   */
+  generateMockPrices(hours = 48) {
+    const prices = [];
+    const now = new Date();
+    // Align to the start of the current hour
+    now.setMinutes(0, 0, 0);
+
+    for (let i = 0; i < hours; i++) {
+      const timestamp = new Date(now.getTime() + i * 60 * 60 * 1000);
+      const hour = timestamp.getHours();
+
+      // Base price in EUR/MWh with a realistic daily shape
+      let basePrice;
+      if (hour >= 0 && hour < 6) basePrice = 30 + Math.random() * 10;       // night: cheap
+      else if (hour >= 6 && hour < 9) basePrice = 70 + Math.random() * 20;  // morning peak
+      else if (hour >= 9 && hour < 16) basePrice = 45 + Math.random() * 15; // midday
+      else if (hour >= 16 && hour < 21) basePrice = 80 + Math.random() * 25;// evening peak
+      else basePrice = 40 + Math.random() * 10;                             // late evening
+
+      prices.push({
+        timestamp,
+        price: basePrice / 1000, // convert EUR/MWh → EUR/kWh
+        area: this.area
+      });
+    }
+    return prices;
   }
 
   async fetchSpotPrices(hours = 24) {
     try {
-      // Nord Pool API endpoint for day-ahead prices
-      const response = await axios.get(
-        `${this.apiUrl}/page1`,
-        {
-          params: {
-            endDate: new Date().toISOString().split('T')[0],
-            country: this.area
+      let prices;
+
+      if (this.useMockPrices) {
+        logger.info('Using MOCK spot prices (USE_MOCK_PRICES=true)');
+        prices = this.generateMockPrices(hours);
+      } else {
+        // Nord Pool API endpoint for day-ahead prices
+        const response = await axios.get(
+          `${this.apiUrl}/page1`,
+          {
+            params: {
+              endDate: new Date().toISOString().split('T')[0],
+              country: this.area
+            }
           }
-        }
-      );
+        );
 
-      if (response.data && response.data.data) {
-        const prices = this.parsePrices(response.data.data);
-        
-        // Store in database
-        if (prices.length > 0) {
-          await SpotPrice.bulkCreate(prices);
-          logger.info(`Stored ${prices.length} spot prices`);
+        if (response.data && response.data.data) {
+          prices = this.parsePrices(response.data.data);
+        } else {
+          return { success: false, message: 'No price data available' };
         }
+      }
 
-        return {
-          success: true,
-          prices
-        };
+      // Store in database
+      if (prices && prices.length > 0) {
+        await SpotPrice.bulkCreate(prices);
+        logger.info(`Stored ${prices.length} spot prices`);
       }
 
       return {
-        success: false,
-        message: 'No price data available'
+        success: true,
+        prices: prices || []
       };
     } catch (error) {
       logger.error('Nord Pool API error', error);
