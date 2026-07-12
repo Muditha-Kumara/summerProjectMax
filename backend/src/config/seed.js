@@ -141,6 +141,38 @@ const seedData = async () => {
     }
     logger.info(`${settings.length} system settings created`);
 
+    // Seed API keys and service settings from environment variables
+    const apiSettings = [
+      { key: 'shelly_auth_key', value: process.env.SHELLY_AUTH_KEY || '', description: 'Shelly Cloud API authentication key' },
+      { key: 'shelly_server_id', value: process.env.SHELLY_SERVER_ID || '', description: 'Shelly server identifier' },
+      { key: 'nordpool_area', value: process.env.NORD_POOL_AREA || 'FI', description: 'Nord Pool price area (e.g., FI, NO, SE)' },
+      { key: 'openweather_api_key', value: process.env.OPENWEATHER_API_KEY || '', description: 'OpenWeatherMap API key' },
+      { key: 'openweather_lat', value: process.env.OPENWEATHER_LAT || '60.1699', description: 'Latitude for weather data' },
+      { key: 'openweather_lon', value: process.env.OPENWEATHER_LON || '24.9384', description: 'Longitude for weather data' },
+      { key: 'openweather_units', value: process.env.OPENWEATHER_UNITS || 'metric', description: 'Weather units (metric/imperial)' },
+      { key: 'openai_api_key', value: process.env.OPENAI_API_KEY || '', description: 'OpenAI-compatible API key (DashScope/Qwen)' },
+      { key: 'ai_model', value: process.env.AI_MODEL || 'qwen-turbo', description: 'AI model to use' },
+      { key: 'ai_endpoint', value: process.env.AI_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1', description: 'AI API endpoint base URL' },
+      { key: 'smtp_host', value: process.env.SMTP_HOST || 'smtp.gmail.com', description: 'SMTP server host' },
+      { key: 'smtp_port', value: process.env.SMTP_PORT || '587', description: 'SMTP server port' },
+      { key: 'smtp_secure', value: process.env.SMTP_SECURE || 'false', description: 'Use SSL/TLS for SMTP' },
+      { key: 'smtp_user', value: process.env.SMTP_USER || '', description: 'SMTP username' },
+      { key: 'smtp_pass', value: process.env.SMTP_PASS || '', description: 'SMTP password' },
+      { key: 'smtp_from', value: process.env.SMTP_FROM || 'Smart Heating <noreply@example.com>', description: 'From email address for notifications' }
+    ];
+
+    for (const setting of apiSettings) {
+      if (setting.value) {
+        await db.query(
+          `INSERT INTO system_settings (key, value, description)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (key) DO NOTHING`,
+          [setting.key, setting.value, setting.description]
+        );
+      }
+    }
+    logger.info(`API settings seeded from environment variables`);
+
     // Create sample booking with PIN
     const sampleBookingPin = '1234';
     const today = new Date();
