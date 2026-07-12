@@ -267,6 +267,130 @@ class SettingsController {
       res.status(500).json({ message: 'Failed to update system settings' });
     }
   }
+
+  /**
+   * POST /api/v1/settings/test-weather
+   * Test OpenWeather API connection
+   */
+  static async testWeather(req, res) {
+    try {
+      const WeatherService = (await import('../services/weatherService.js')).default;
+      const result = await WeatherService.getCurrentWeather();
+      
+      res.json({
+        success: result.success,
+        message: result.success 
+          ? `Weather API working! Current temp: ${result.data.temperature}°C, ${result.data.description}`
+          : `Weather API failed: ${result.message}`,
+        data: result.success ? result.data : null
+      });
+    } catch (error) {
+      logger.error('Weather test failed', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Weather test failed: ${error.message}` 
+      });
+    }
+  }
+
+  /**
+   * POST /api/v1/settings/test-nordpool
+   * Test Nord Pool API connection
+   */
+  static async testNordPool(req, res) {
+    try {
+      const NordPoolService = (await import('../services/nordPoolService.js')).default;
+      const result = await NordPoolService.fetchSpotPrices(24);
+      
+      res.json({
+        success: result.success,
+        message: result.success 
+          ? `Nord Pool API working! Retrieved ${result.data?.length || 0} price entries`
+          : `Nord Pool API failed: ${result.message}`,
+        data: result.success ? { count: result.data?.length || 0 } : null
+      });
+    } catch (error) {
+      logger.error('Nord Pool test failed', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Nord Pool test failed: ${error.message}` 
+      });
+    }
+  }
+
+  /**
+   * POST /api/v1/settings/test-shelly
+   * Test Shelly Cloud API connection
+   */
+  static async testShelly(req, res) {
+    try {
+      const ShellyService = (await import('../services/shellyService.js')).default;
+      const result = await ShellyService.getDeviceList();
+      
+      res.json({
+        success: result.success,
+        message: result.success 
+          ? `Shelly Cloud API working! Found ${result.data?.devices?.length || 0} devices`
+          : `Shelly Cloud API failed: ${result.message}`,
+        data: result.success ? { deviceCount: result.data?.devices?.length || 0 } : null
+      });
+    } catch (error) {
+      logger.error('Shelly test failed', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Shelly test failed: ${error.message}` 
+      });
+    }
+  }
+
+  /**
+   * POST /api/v1/settings/test-ai
+   * Test AI API connection
+   */
+  static async testAI(req, res) {
+    try {
+      const AIService = (await import('../services/aiService.js')).default;
+      const apiKey = await AIService.getApiKey();
+      const model = await AIService.getModel();
+      const endpoint = await AIService.getEndpoint();
+      
+      if (!apiKey) {
+        return res.json({
+          success: false,
+          message: 'AI API key not configured. Please set it in the settings above.'
+        });
+      }
+
+      // Simple test request
+      const axios = (await import('axios')).default;
+      const response = await axios.post(
+        `${endpoint}/chat/completions`,
+        {
+          model: model,
+          messages: [{ role: 'user', content: 'Hello' }],
+          max_tokens: 10
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+      
+      res.json({
+        success: true,
+        message: `AI API working! Model: ${model}, Response: ${response.data.choices?.[0]?.message?.content || 'OK'}`
+      });
+    } catch (error) {
+      logger.error('AI test failed', error);
+      res.status(500).json({ 
+        success: false, 
+        message: `AI test failed: ${error.response?.data?.error?.message || error.message}` 
+      });
+    }
+  }
 }
 
 export default SettingsController;

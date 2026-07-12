@@ -12,7 +12,7 @@ import {
   Area,
   CartesianGrid,
 } from 'recharts';
-import api from '../api';
+import api from '../services/api';
 
 /* ───────── Control Mode Badge ───────── */
 const MODE_STYLES = {
@@ -228,5 +228,3 @@ export function OptimizeAllButton({ onDone }) {
     </div>
   );
 }
-
-</arg_value>
