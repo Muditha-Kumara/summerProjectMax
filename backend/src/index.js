@@ -30,10 +30,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting
+// Rate limiting (exclude AI chat - it has its own lenient limiter)
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
+  skip: (req) => req.path.startsWith('/ai/chat'),
   message: {
     success: false,
     message: 'Too many requests, please try again later'
