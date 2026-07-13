@@ -81,41 +81,61 @@ ${weatherInfo}
 - Give weather-based recommendations
 - Answer questions about the cottage heating system
 
-## How to Respond
-IMPORTANT: Always respond with valid JSON in this exact format:
+## CRITICAL: Response Format
+YOU MUST ALWAYS RESPOND WITH VALID JSON. NO EXCEPTIONS.
+Your entire response must be a single JSON object. Do not include any text outside the JSON.
+
+Required format:
 {
   "text": "Your spoken response here (1-2 sentences max)",
-  "action": { "type": "setTemperature", "roomId": 4, "temperature": 23 }
+  "action": null
 }
 
-The "action" field is OPTIONAL - only include it when the user wants to change something.
+The "action" field is REQUIRED - set it to null for questions, or include an action object for commands.
 
 ### Action Types:
-1. Set temperature: { "type": "setTemperature", "roomId": <id>, "temperature": <number> }
-2. Set mode: { "type": "setMode", "mode": "home" | "eco" | "comfort" }
+1. Set temperature: { "type": "setTemperature", "roomId": <number>, "temperature": <number> }
+2. Set mode: { "type": "setMode", "mode": "home" | "eco" | "comfort" | "away" }
 3. Set away with duration: { "type": "setAwayMode", "durationHours": <number> }
 
 ## Room IDs
 ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
 
-## Examples:
-- User: "What's the temperature?" → {"text": "The living room is 21°C and the bedroom is 19°C."}
-- User: "Set living room to 23 degrees" → {"text": "Setting the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
-- User: "I'm going out for 2 hours" → {"text": "Activating away mode for 2 hours. I'll restore the temperature when you return.", "action": {"type": "setAwayMode", "durationHours": 2}}
-- User: "I'm leaving for 3 hours" → {"text": "Setting away mode for 3 hours. See you soon!", "action": {"type": "setAwayMode", "durationHours": 3}}
-- User: "Make it warmer" → {"text": "I'll set the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
+## Examples (YOU MUST FOLLOW THIS EXACT FORMAT):
+- User: "What's the temperature?"
+  → {"text": "The living room is 21°C and the bedroom is 19°C.", "action": null}
+
+- User: "Set living room to 23 degrees"
+  → {"text": "Setting the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
+
+- User: "Change to home mode"
+  → {"text": "I've set the system to home mode.", "action": {"type": "setMode", "mode": "home"}}
+
+- User: "Deactivate eco mode"
+  → {"text": "I've deactivated eco mode and set it to home mode.", "action": {"type": "setMode", "mode": "home"}}
+
+- User: "Which mode did you set?"
+  → {"text": "I set the system to home mode.", "action": null}
+
+- User: "I'm going out for 2 hours"
+  → {"text": "Activating away mode for 2 hours.", "action": {"type": "setAwayMode", "durationHours": 2}}
+
+- User: "I'm leaving for 3 hours"
+  → {"text": "Setting away mode for 3 hours. See you soon!", "action": {"type": "setAwayMode", "durationHours": 3}}
+
+- User: "Make it warmer"
+  → {"text": "I'll set the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
 
 ## Rules:
 - Keep responses SHORT (1-2 sentences) - this is voice, not chat
-- Always respond with valid JSON
-- Only include "action" when the user wants to change something
+- ALWAYS respond with valid JSON - no exceptions, no plain text
+- ALWAYS include both "text" and "action" fields in your JSON response
+- Set "action" to null for questions, include action object for commands
 - Use ONLY the room data provided above - never make up temperatures
-- If unsure which room, ask for clarification
+- If unsure which room, ask for clarification and set action to null
 - NEVER set a temperature outside the allowed range for a room
-- If the user says "set it" without specifying which room, ask for clarification
-- If the requested temperature is outside the allowed range, explain the valid range and ask for a new value
-- When user mentions going out/away/leaving with a duration, use "setAwayMode" action with durationHours
-- If user says "I'm leaving" without duration, ask how long they'll be gone
+- When user mentions going out/away/leaving with a duration, use "setAwayMode" action
+- If user says "I'm leaving" without duration, ask how long and set action to null
 `;
   }
 
@@ -165,12 +185,72 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
         }
       }
       
-      // Return as plain text
+      // FALLBACK: Detect intent from plain text when AI doesn't return JSON
+      const fallbackAction = this.detectIntentFromText(aiResponse);
+      
+      if (fallbackAction) {
+        logger.warn('AI returned plain text, using fallback intent detection', { 
+          text: aiResponse.substring(0, 100), 
+          detectedAction: fallbackAction 
+        });
+      }
+      
       return {
         text: aiResponse,
-        action: null,
+        action: fallbackAction,
       };
     }
+  }
+
+  /**
+   * Fallback intent detection when AI doesn't return proper JSON
+   * Detects mode changes and other actions from plain text responses
+   */
+  static detectIntentFromText(text) {
+    const normalized = text.toLowerCase();
+    
+    // Mode detection - look for phrases indicating mode changes
+    if (normalized.includes('set to home mode') || 
+        normalized.includes('set the system to home') || 
+        normalized.includes('changed to home mode') ||
+        normalized.includes('switched to home mode') ||
+        (normalized.includes('home mode') && (normalized.includes('set') || normalized.includes('change')))) {
+      return { type: 'setMode', mode: 'home' };
+    }
+    
+    if (normalized.includes('set to eco mode') || 
+        normalized.includes('set the system to eco') || 
+        normalized.includes('changed to eco mode') ||
+        normalized.includes('switched to eco mode') ||
+        normalized.includes('activat') && normalized.includes('eco mode') ||
+        (normalized.includes('eco mode') && (normalized.includes('set') || normalized.includes('change')))) {
+      return { type: 'setMode', mode: 'eco' };
+    }
+    
+    if (normalized.includes('set to comfort mode') || 
+        normalized.includes('set the system to comfort') || 
+        normalized.includes('changed to comfort mode') ||
+        normalized.includes('switched to comfort mode') ||
+        (normalized.includes('comfort mode') && (normalized.includes('set') || normalized.includes('change')))) {
+      return { type: 'setMode', mode: 'comfort' };
+    }
+    
+    if (normalized.includes('set to away mode') || 
+        normalized.includes('set the system to away') || 
+        normalized.includes('changed to away mode') ||
+        normalized.includes('switched to away mode') ||
+        (normalized.includes('away mode') && (normalized.includes('set') || normalized.includes('change')))) {
+      return { type: 'setMode', mode: 'away' };
+    }
+    
+    // Deactivation patterns - map to home mode
+    if (normalized.includes('deactivat') && normalized.includes('eco') ||
+        normalized.includes('turn off') && normalized.includes('eco') ||
+        normalized.includes('disable') && normalized.includes('eco')) {
+      return { type: 'setMode', mode: 'home' };
+    }
+    
+    return null;
   }
 
   /**
@@ -223,8 +303,18 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
       const data = await response.json();
       const rawReply = data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
       
+      // Log raw response for debugging
+      logger.info('AI raw response', { rawReply: rawReply.substring(0, 300) });
+      
       // Parse the response to extract text and action
       const parsed = this.parseResponse(rawReply);
+      
+      // Log parsed result
+      logger.info('AI parsed response', { 
+        text: parsed.text.substring(0, 100), 
+        hasAction: !!parsed.action, 
+        action: parsed.action 
+      });
 
       return {
         success: true,
