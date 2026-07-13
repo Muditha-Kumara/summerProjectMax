@@ -121,12 +121,14 @@ const seedData = async () => {
     logger.info(`${rooms.length} rooms created`);
 
     // Create default system settings
+    // Note: Mode temperatures are now room-specific (see ROOM_MODE_TEMPS in optimizationService.js)
+    // These values serve as fallback defaults for rooms not in the room-specific map
     const settings = [
       { key: 'default_mode', value: 'home', description: 'Default heating mode' },
-      { key: 'eco_temp', value: '18', description: 'Eco mode temperature' },
-      { key: 'away_temp', value: '16', description: 'Away mode temperature' },
-      { key: 'comfort_temp', value: '23', description: 'Comfort mode temperature' },
-      { key: 'home_temp', value: '21', description: 'Home mode temperature' },
+      { key: 'eco_temp', value: '19', description: 'Eco mode temperature (fallback for living spaces)' },
+      { key: 'away_temp', value: '15', description: 'Away mode temperature (fallback for living spaces)' },
+      { key: 'comfort_temp', value: '23', description: 'Comfort mode temperature (fallback for living spaces)' },
+      { key: 'home_temp', value: '21', description: 'Home mode temperature (fallback for living spaces)' },
       { key: 'optimization_enabled', value: 'true', description: 'Enable spot-price optimization' },
       { key: 'winter_safeguards_enabled', value: 'true', description: 'Enable winter safeguards' }
     ];
