@@ -468,7 +468,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         // Execute action if present
         if (action) {
           console.log('[VoiceAssistant] ⚡ Executing action...');
-          await executeAction(action);
+          await executeAction(action, aiText);
           console.log('[VoiceAssistant] ✅ Action completed');
         }
 
@@ -508,12 +508,63 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     }
   }, [i18n.language, speak]);
 
-  const executeAction = async (action) => {
+  const getRoomDisplayNames = (room) => [room?.name, room?.name_en, room?.name_fi, room?.name_sv].filter(Boolean);
+
+  const normalizeText = (value) =>
+    (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const isTemperatureAllowed = (room, temperature) => {
+    if (!room || !Number.isFinite(temperature)) {
+      return false;
+    }
+
+    const minTemp = Number(room.min_temp);
+    const maxTemp = Number(room.max_temp);
+    const criticalMinTemp = Number(room.critical_min_temp);
+
+    if (Number.isFinite(minTemp) && temperature < minTemp) {
+      return false;
+    }
+
+    if (Number.isFinite(maxTemp) && temperature > maxTemp) {
+      return false;
+    }
+
+    if (room.is_critical && Number.isFinite(criticalMinTemp) && temperature < criticalMinTemp) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const findRoomByVoiceText = (voiceText, temperature) => {
+    const normalizedVoiceText = normalizeText(voiceText);
+
+    return rooms?.find((room) =>
+      isTemperatureAllowed(room, temperature) &&
+      getRoomDisplayNames(room).some((roomName) => normalizedVoiceText.includes(normalizeText(roomName)))
+    ) || null;
+  };
+
+  const executeAction = async (action, voiceText = '') => {
     try {
       const token = localStorage.getItem('userToken') || localStorage.getItem('token');
       
-      if (action.type === 'setTemperature' && action.roomId && action.temperature) {
-        await api.put(`/rooms/${action.roomId}/temperature`, { targetTemp: action.temperature });
+      if (action.type === 'setTemperature' && action.roomId != null && action.temperature != null) {
+        const targetTemp = Number(action.temperature);
+        const roomById = rooms?.find((room) => room.id === Number(action.roomId)) || null;
+        const roomByVoiceText = findRoomByVoiceText(voiceText, targetTemp);
+        const targetRoom = isTemperatureAllowed(roomById, targetTemp) ? roomById : roomByVoiceText || roomById;
+
+        if (!targetRoom || !isTemperatureAllowed(targetRoom, targetTemp)) {
+          console.warn('[VoiceAssistant] Skipping temperature action due to unresolved room or invalid temperature:', action);
+          return;
+        }
+
+        await api.put(`/rooms/${targetRoom.id}/temperature`, { targetTemp });
         if (onRoomUpdate) onRoomUpdate();
       } else if (action.type === 'setMode' && action.mode) {
         await api.post(`/optimization/quick-mode/${action.mode}`);
