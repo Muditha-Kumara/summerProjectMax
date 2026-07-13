@@ -91,8 +91,8 @@ const seedData = async () => {
         shelly_device_id: 'shelly-pro-4pm-water',
         shelly_device_type: 'Shelly Pro 4PM',
         is_critical: false,
-        min_temp: 40.00,
-        max_temp: 65.00,
+        min_temp: 50.00,
+        max_temp: 80.00,
         target_temp: 55.00
       },
       {
@@ -103,8 +103,8 @@ const seedData = async () => {
         shelly_device_id: 'shelly-pro-1pm-heatpump',
         shelly_device_type: 'Shelly Pro 1PM',
         is_critical: true,
-        critical_min_temp: 5.00,
-        min_temp: 5.00,
+        critical_min_temp: 15.00,
+        min_temp: 16.00,
         max_temp: 30.00,
         target_temp: 21.00
       }
