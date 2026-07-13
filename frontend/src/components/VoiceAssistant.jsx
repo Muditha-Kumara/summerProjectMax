@@ -20,6 +20,8 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const speechTimeoutRef = useRef(null);
   const voiceSpeedRef = useRef(voiceSpeed);
   const selectedVoiceRef = useRef(selectedVoice);
+  const isProcessingRef = useRef(false);
+  const lastSpokenTextRef = useRef('');
 
   // Keep refs in sync with state so speak() always uses latest values
   useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
@@ -87,6 +89,15 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const speak = (text) => {
     if (!synthRef.current || !text) return;
 
+    // Prevent duplicate speech: skip if same text was just spoken
+    if (text === lastSpokenTextRef.current) {
+      console.log('[VoiceAssistant] Skipping duplicate speech:', text);
+      return;
+    }
+
+    console.log('[VoiceAssistant] 🗣️ Speaking:', text);
+    lastSpokenTextRef.current = text;
+
     // Clear any pending speech to prevent double-speaking
     if (speechTimeoutRef.current) {
       clearTimeout(speechTimeoutRef.current);
@@ -110,14 +121,18 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         utterance.voice = selectedVoiceRef.current;
       }
 
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        console.log('[VoiceAssistant] Speech started');
+        setIsSpeaking(true);
+      };
       utterance.onend = () => {
+        console.log('[VoiceAssistant] Speech ended');
         setIsSpeaking(false);
       };
       utterance.onerror = (e) => {
         // Ignore 'canceled' and 'interrupted' errors — they are expected
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
-          console.error('Speech error:', e.error);
+          console.error('[VoiceAssistant] Speech error:', e.error);
         }
         setIsSpeaking(false);
       };
@@ -136,6 +151,12 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   };
 
   const startListening = () => {
+    // Prevent listening while speaking or processing
+    if (isSpeaking || isProcessingRef.current) {
+      console.log('[VoiceAssistant] Cannot listen: speaking or processing');
+      return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setResponse(t('voice.notSupported') || 'Speech recognition not supported');
@@ -143,12 +164,15 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       return;
     }
 
+    console.log('[VoiceAssistant] 🎤 Starting to listen...');
+    
     const recognition = new SpeechRecognition();
     recognition.lang = i18n.language === 'fi' ? 'fi-FI' : i18n.language === 'sv' ? 'sv-SE' : 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => {
+      console.log('[VoiceAssistant] Listening started');
       setIsListening(true);
       setShowPanel(true);
       setTranscript('');
@@ -157,17 +181,19 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
 
     recognition.onresult = async (event) => {
       const text = event.results[0][0].transcript;
+      console.log('[VoiceAssistant] 👂 Heard:', text);
       setTranscript(text);
       await processVoiceCommand(text);
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('[VoiceAssistant] Recognition error:', event.error);
       setIsListening(false);
       setResponse(t('voice.couldNotUnderstand') || 'Could not understand');
     };
 
     recognition.onend = () => {
+      console.log('[VoiceAssistant] Listening ended');
       setIsListening(false);
     };
 
