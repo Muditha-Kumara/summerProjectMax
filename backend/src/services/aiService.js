@@ -49,7 +49,7 @@ class AIService {
     const roomSummary = rooms
       .map(
         (r) =>
-          `- ${r.name} (id: ${r.id}): current ${r.current_temp ?? '?'}°C, target ${r.target_temp ?? '?'}°C, mode: ${r.control_mode ?? 'auto'}`
+          `- ${r.name} (id: ${r.id}): current ${r.current_temp ?? '?'}°C, target ${r.target_temp ?? '?'}°C, mode: ${r.control_mode ?? 'auto'}, allowed range: ${r.min_temp ?? '?'}-${r.max_temp ?? '?'}°C`
       )
       .join('\n');
 
@@ -108,6 +108,9 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
 - Only include "action" when the user wants to change something
 - Use ONLY the room data provided above - never make up temperatures
 - If unsure which room, ask for clarification
+- NEVER set a temperature outside the allowed range for a room
+- If the user says "set it" without specifying which room, ask for clarification
+- If the requested temperature is outside the allowed range, explain the valid range and ask for a new value
 `;
   }
 

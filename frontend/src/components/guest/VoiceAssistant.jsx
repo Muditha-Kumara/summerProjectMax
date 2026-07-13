@@ -332,8 +332,18 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         const roomByVoiceText = findRoomByVoiceText(voiceText, targetTemp);
         const targetRoom = isTemperatureAllowed(roomById, targetTemp) ? roomById : roomByVoiceText || roomById;
 
-        if (!targetRoom || !isTemperatureAllowed(targetRoom, targetTemp)) {
-          console.warn('[VoiceAssistant] Skipping temperature action due to unresolved room or invalid temperature:', action);
+        if (!targetRoom) {
+          console.warn('[VoiceAssistant] Room not found:', action);
+          setResponse(t('voice.roomNotFound') || 'I could not find that room');
+          return;
+        }
+
+        if (!isTemperatureAllowed(targetRoom, targetTemp)) {
+          const minTemp = Number(targetRoom.min_temp);
+          const maxTemp = Number(targetRoom.max_temp);
+          const roomName = getRoomDisplayNames(targetRoom)[0] || 'This room';
+          console.warn('[VoiceAssistant] Temperature out of range:', { room: targetRoom.name, targetTemp, minTemp, maxTemp });
+          setResponse(t('voice.tempOutOfRange', { room: roomName, min: minTemp, max: maxTemp }) || `${roomName} temperature must be between ${minTemp} and ${maxTemp} degrees`);
           return;
         }
 
