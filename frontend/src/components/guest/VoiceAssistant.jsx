@@ -17,6 +17,18 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const [availableVoices, setAvailableVoices] = useState([]);
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
+  const isProcessingRef = useRef(false);
+  const lastSpokenTextRef = useRef('');
+  const pendingTranscriptRef = useRef('');
+  const transcriptDebounceRef = useRef(null);
+  const transcriptHandledRef = useRef(false);
+
+  const clearTranscriptDebounce = () => {
+    if (transcriptDebounceRef.current) {
+      clearTimeout(transcriptDebounceRef.current);
+      transcriptDebounceRef.current = null;
+    }
+  };
 
   // Load available voices
   useEffect(() => {
@@ -59,28 +71,52 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   }, [selectedVoice]);
 
   const speak = (text) => {
-    if (!synthRef.current || !text) return;
+    if (!synthRef.current || !text) return Promise.resolve();
+
+    // Prevent duplicate speech: skip if same text was just spoken
+    if (text === lastSpokenTextRef.current) {
+      console.log('[VoiceAssistant] Skipping duplicate speech:', text);
+      return Promise.resolve();
+    }
+
+    console.log('[VoiceAssistant] 🗣️ Speaking:', text);
+    lastSpokenTextRef.current = text;
 
     // Cancel any ongoing speech to prevent double-speaking
     synthRef.current.cancel();
 
     // Small delay to ensure cancel completes
-    setTimeout(() => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = voiceSpeed;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = voiceSpeed;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+        utterance.onstart = () => {
+          console.log('[VoiceAssistant] Speech started');
+          setIsSpeaking(true);
+        };
+        utterance.onend = () => {
+          console.log('[VoiceAssistant] Speech ended');
+          setIsSpeaking(false);
+          resolve();
+        };
+        utterance.onerror = (e) => {
+          if (e.error !== 'canceled' && e.error !== 'interrupted') {
+            console.error('[VoiceAssistant] Speech error:', e.error);
+          }
+          setIsSpeaking(false);
+          resolve();
+        };
 
-      synthRef.current.speak(utterance);
-    }, 100);
+        synthRef.current.speak(utterance);
+      }, 100);
+    });
   };
 
   const testVoice = () => {
@@ -93,6 +129,12 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   };
 
   const startListening = () => {
+    // Prevent listening while speaking or processing
+    if (isSpeaking || isProcessingRef.current) {
+      console.log('[VoiceAssistant] Cannot listen: speaking or processing');
+      return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setResponse(t('voice.notSupported') || 'Speech recognition not supported');
@@ -100,32 +142,62 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       return;
     }
 
+    console.log('[VoiceAssistant] 🎤 Starting to listen...');
+
     const recognition = new SpeechRecognition();
     recognition.lang = i18n.language === 'fi' ? 'fi-FI' : i18n.language === 'sv' ? 'sv-SE' : 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => {
+      console.log('[VoiceAssistant] Listening started');
       setIsListening(true);
       setShowPanel(true);
       setTranscript('');
       setResponse('');
+      pendingTranscriptRef.current = '';
+      transcriptHandledRef.current = false;
+      clearTranscriptDebounce();
     };
 
     recognition.onresult = async (event) => {
       const text = event.results[0][0].transcript;
+      console.log('[VoiceAssistant] 👂 Heard:', text);
       setTranscript(text);
-      await processVoiceCommand(text);
+      pendingTranscriptRef.current = text;
+      clearTranscriptDebounce();
+      transcriptDebounceRef.current = setTimeout(() => {
+        const finalText = pendingTranscriptRef.current.trim();
+        if (!finalText || transcriptHandledRef.current || isProcessingRef.current) {
+          return;
+        }
+
+        transcriptHandledRef.current = true;
+        recognitionRef.current?.stop();
+        processVoiceCommand(finalText);
+      }, 900);
     };
 
     recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('[VoiceAssistant] Recognition error:', event.error);
       setIsListening(false);
+      clearTranscriptDebounce();
       setResponse(t('voice.couldNotUnderstand') || 'Could not understand');
     };
 
     recognition.onend = () => {
+      console.log('[VoiceAssistant] Listening ended');
       setIsListening(false);
+
+      const finalText = pendingTranscriptRef.current.trim();
+      if (!finalText || transcriptHandledRef.current || isProcessingRef.current) {
+        clearTranscriptDebounce();
+        return;
+      }
+
+      transcriptHandledRef.current = true;
+      clearTranscriptDebounce();
+      processVoiceCommand(finalText);
     };
 
     recognitionRef.current = recognition;
@@ -133,39 +205,79 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   };
 
   const processVoiceCommand = async (text) => {
+    // Prevent processing while already processing
+    if (isProcessingRef.current) {
+      console.log('[VoiceAssistant] Already processing a command, ignoring');
+      return;
+    }
+
+    isProcessingRef.current = true;
+    console.log('[VoiceAssistant] 🤖 Processing command:', text);
+
     try {
       // Add user message to history
       const newHistory = [...conversationHistory, { role: 'user', content: text }];
+      
+      console.log('[VoiceAssistant] 📤 Sending to AI backend...');
       
       // Send to AI backend
       const apiResponse = await api.post('/ai/chat', {
         message: text,
         language: i18n.language,
         history: newHistory.slice(-6) // Keep last 6 messages
+      }, {
+        timeout: 30000 // 30 second timeout for AI responses
       });
 
       if (apiResponse.data.success) {
         const aiText = apiResponse.data.text;
         const action = apiResponse.data.action;
 
+        console.log('[VoiceAssistant] 📥 AI Response:', aiText);
+        if (action) {
+          console.log('[VoiceAssistant] 🎯 AI Action:', action);
+        }
+
         setResponse(aiText);
         
         // Update conversation history
         setConversationHistory([...newHistory, { role: 'assistant', content: aiText }]);
 
-        // Speak the response
-        speak(aiText);
-
-        // Execute action if present
+        // Execute action if present (before speaking)
         if (action) {
+          console.log('[VoiceAssistant] ⚡ Executing action...');
           await executeAction(action);
+          console.log('[VoiceAssistant] ✅ Action completed');
         }
+
+        // Speak the response
+        await speak(aiText);
       } else {
-        setResponse(apiResponse.data.message || 'AI service unavailable');
+        const errorMsg = apiResponse.data.message || 'AI service unavailable';
+        console.log('[VoiceAssistant] ❌ AI Error:', errorMsg);
+        setResponse(errorMsg);
+        await speak(errorMsg);
       }
     } catch (error) {
-      console.error('Voice command failed:', error);
-      setResponse(t('voice.error') || 'Failed to process command');
+      console.error('[VoiceAssistant] ❌ Voice command failed:', error);
+      
+      let errorMessage = 'Failed to process command';
+      if (error.response) {
+        errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = 'Cannot connect to server. Please check your connection.';
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.log('[VoiceAssistant] ❌ Error message:', errorMessage);
+      setResponse(errorMessage);
+      await speak(errorMessage);
+    } finally {
+      isProcessingRef.current = false;
+      console.log('[VoiceAssistant] 🏁 Processing complete');
     }
   };
 

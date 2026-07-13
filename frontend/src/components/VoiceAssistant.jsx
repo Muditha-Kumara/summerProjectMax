@@ -1,7 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
+
+// Voice assistant states: IDLE -> LISTENING -> PROCESSING -> SPEAKING -> COOLDOWN -> IDLE
+const VA_STATE = {
+  IDLE: 'idle',
+  LISTENING: 'listening',
+  PROCESSING: 'processing',
+  SPEAKING: 'speaking',
+  COOLDOWN: 'cooldown',
+};
+
+const COOLDOWN_MS = 3000; // Time after speech ends before mic can listen again (3 seconds to prevent feedback)
 
 const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const { t, i18n } = useTranslation();
@@ -18,14 +29,55 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
   const speechTimeoutRef = useRef(null);
+  const cooldownTimeoutRef = useRef(null);
+  const silenceTimeoutRef = useRef(null); // Wait for silence before processing
+  const waitingForSilenceRef = useRef(false); // Track if we're waiting for silence timeout
   const voiceSpeedRef = useRef(voiceSpeed);
   const selectedVoiceRef = useRef(selectedVoice);
-  const isProcessingRef = useRef(false);
+  const vaStateRef = useRef(VA_STATE.IDLE);
   const lastSpokenTextRef = useRef('');
+  const currentTranscriptRef = useRef('');
+  const conversationHistoryRef = useRef([]);
+  const lastAIResponseRef = useRef(''); // Track last AI response to filter feedback
+  const speechActiveRef = useRef(false); // CRITICAL: Block recognition during speech
 
   // Keep refs in sync with state so speak() always uses latest values
   useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
   useEffect(() => { selectedVoiceRef.current = selectedVoice; }, [selectedVoice]);
+  useEffect(() => { conversationHistoryRef.current = conversationHistory; }, [conversationHistory]);
+
+  // Helper function to check if transcript is likely feedback from AI speech
+  const isLikelyFeedback = useCallback((transcript, lastResponse) => {
+    if (!lastResponse || !transcript) return false;
+    
+    const normalizedTranscript = transcript.toLowerCase().trim();
+    const normalizedResponse = lastResponse.toLowerCase().trim();
+    
+    // Check if transcript is a substring of the last AI response
+    if (normalizedResponse.includes(normalizedTranscript)) {
+      console.log('[VoiceAssistant] 🔄 Detected feedback loop - transcript matches AI response');
+      return true;
+    }
+    
+    // Check if transcript contains significant portions of AI response
+    const words = normalizedTranscript.split(/\s+/);
+    const responseWords = normalizedResponse.split(/\s+/);
+    let matchCount = 0;
+    
+    for (const word of words) {
+      if (word.length > 3 && responseWords.includes(word)) {
+        matchCount++;
+      }
+    }
+    
+    // If more than 60% of words match, likely feedback
+    if (words.length > 0 && matchCount / words.length > 0.6) {
+      console.log('[VoiceAssistant] 🔄 Detected feedback loop - high word overlap');
+      return true;
+    }
+    
+    return false;
+  }, []);
 
   // Load available voices
   useEffect(() => {
@@ -78,15 +130,17 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     }
   }, [selectedVoice]);
 
-  // Cleanup speech on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+      if (cooldownTimeoutRef.current) clearTimeout(cooldownTimeoutRef.current);
       synthRef.current?.cancel();
+      recognitionRef.current?.abort();
     };
   }, []);
 
-  const speak = (text) => {
+  const speak = useCallback((text) => {
     if (!synthRef.current || !text) return;
 
     // Prevent duplicate speech: skip if same text was just spoken
@@ -97,6 +151,24 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
 
     console.log('[VoiceAssistant] 🗣️ Speaking:', text);
     lastSpokenTextRef.current = text;
+    
+    // CRITICAL: Set speech active flag to block all recognition
+    speechActiveRef.current = true;
+    
+    // CRITICAL: Immediately abort any active recognition to prevent feedback
+    if (recognitionRef.current) {
+      console.log('[VoiceAssistant] 🛑 Aborting recognition to prevent feedback');
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {
+        console.log('[VoiceAssistant] Recognition abort error (expected):', e.message);
+      }
+      recognitionRef.current = null;
+      setIsListening(false);
+    }
+    
+    // Set state to SPEAKING immediately to block any new recognition
+    vaStateRef.current = VA_STATE.SPEAKING;
 
     // Clear any pending speech to prevent double-speaking
     if (speechTimeoutRef.current) {
@@ -112,7 +184,6 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       speechTimeoutRef.current = null;
 
       const utterance = new SpeechSynthesisUtterance(text);
-      // Always read from refs to get the latest values
       utterance.rate = voiceSpeedRef.current;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
@@ -128,18 +199,34 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       utterance.onend = () => {
         console.log('[VoiceAssistant] Speech ended');
         setIsSpeaking(false);
+        // Enter cooldown period to prevent feedback loop
+        vaStateRef.current = VA_STATE.COOLDOWN;
+        console.log('[VoiceAssistant] ⏳ Entering cooldown period...');
+        cooldownTimeoutRef.current = setTimeout(() => {
+          cooldownTimeoutRef.current = null;
+          vaStateRef.current = VA_STATE.IDLE;
+          // CRITICAL: Clear speech active flag after cooldown
+          speechActiveRef.current = false;
+          console.log('[VoiceAssistant] ✅ Cooldown complete, ready for next command');
+        }, COOLDOWN_MS);
       };
       utterance.onerror = (e) => {
-        // Ignore 'canceled' and 'interrupted' errors — they are expected
         if (e.error !== 'canceled' && e.error !== 'interrupted') {
           console.error('[VoiceAssistant] Speech error:', e.error);
         }
         setIsSpeaking(false);
+        vaStateRef.current = VA_STATE.COOLDOWN;
+        cooldownTimeoutRef.current = setTimeout(() => {
+          cooldownTimeoutRef.current = null;
+          vaStateRef.current = VA_STATE.IDLE;
+          // CRITICAL: Clear speech active flag after cooldown
+          speechActiveRef.current = false;
+        }, COOLDOWN_MS);
       };
 
       synthRef.current.speak(utterance);
     }, 50);
-  };
+  }, []);
 
   const testVoice = () => {
     const testText = i18n.language === 'fi' 
@@ -150,10 +237,10 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     speak(testText);
   };
 
-  const startListening = () => {
-    // Prevent listening while speaking or processing
-    if (isSpeaking || isProcessingRef.current) {
-      console.log('[VoiceAssistant] Cannot listen: speaking or processing');
+  const startListening = useCallback(() => {
+    // Only allow listening when in IDLE state
+    if (vaStateRef.current !== VA_STATE.IDLE) {
+      console.log('[VoiceAssistant] Cannot listen: current state is', vaStateRef.current);
       return;
     }
 
@@ -164,12 +251,17 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       return;
     }
 
+    // Cancel any ongoing speech before listening
+    synthRef.current.cancel();
+
     console.log('[VoiceAssistant] 🎤 Starting to listen...');
+    vaStateRef.current = VA_STATE.LISTENING;
     
     const recognition = new SpeechRecognition();
     recognition.lang = i18n.language === 'fi' ? 'fi-FI' : i18n.language === 'sv' ? 'sv-SE' : 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true; // Keep listening until user stops speaking
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
       console.log('[VoiceAssistant] Listening started');
@@ -177,89 +269,244 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       setShowPanel(true);
       setTranscript('');
       setResponse('');
+      currentTranscriptRef.current = '';
+      
+      // Set maximum listening time (10 seconds) to prevent infinite listening
+      silenceTimeoutRef.current = setTimeout(() => {
+        console.log('[VoiceAssistant] ⏱️ Max listening time reached, stopping');
+        recognition.stop();
+      }, 10000);
     };
 
-    recognition.onresult = async (event) => {
-      const text = event.results[0][0].transcript;
-      console.log('[VoiceAssistant] 👂 Heard:', text);
-      setTranscript(text);
-      await processVoiceCommand(text);
+    recognition.onresult = (event) => {
+      // CRITICAL: Block all processing while speech is active
+      if (speechActiveRef.current) {
+        console.log('[VoiceAssistant] 🚫 Blocking recognition - speech is active');
+        return;
+      }
+      
+      // CRITICAL: Ignore results if we're not in LISTENING state
+      if (vaStateRef.current !== VA_STATE.LISTENING) {
+        console.log('[VoiceAssistant] Ignoring result - not in LISTENING state:', vaStateRef.current);
+        return;
+      }
+
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+      
+      if (finalTranscript) {
+        // Accumulate final transcripts
+        currentTranscriptRef.current += ' ' + finalTranscript;
+        console.log('[VoiceAssistant] 👂 Final:', finalTranscript);
+        setTranscript(currentTranscriptRef.current.trim());
+        
+        // Mark that we're waiting for silence timeout
+        waitingForSilenceRef.current = true;
+        
+        // Reset silence timer - wait 2 seconds of silence before processing
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
+        silenceTimeoutRef.current = setTimeout(() => {
+          console.log('[VoiceAssistant] ⏱️ Silence detected (2s), stopping recognition');
+          waitingForSilenceRef.current = false;
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+        }, 2000);
+      } else if (interimTranscript) {
+        // Show interim in UI for live feedback
+        setTranscript(currentTranscriptRef.current.trim() + ' ' + interimTranscript);
+        
+        // Mark that we're waiting for silence timeout
+        waitingForSilenceRef.current = true;
+        
+        // Reset silence timer on interim results too
+        if (silenceTimeoutRef.current) {
+          clearTimeout(silenceTimeoutRef.current);
+        }
+        silenceTimeoutRef.current = setTimeout(() => {
+          console.log('[VoiceAssistant] ⏱️ Silence detected (2s), stopping recognition');
+          waitingForSilenceRef.current = false;
+          if (recognitionRef.current) {
+            recognitionRef.current.stop();
+          }
+        }, 2000);
+      }
     };
 
     recognition.onerror = (event) => {
       console.error('[VoiceAssistant] Recognition error:', event.error);
       setIsListening(false);
-      setResponse(t('voice.couldNotUnderstand') || 'Could not understand');
+      vaStateRef.current = VA_STATE.IDLE;
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        setResponse(t('voice.couldNotUnderstand') || 'Could not understand');
+      }
     };
 
-    recognition.onend = () => {
+    recognition.onend = async () => {
       console.log('[VoiceAssistant] Listening ended');
       setIsListening(false);
+      
+      // CRITICAL: If we're still waiting for silence timeout, don't process yet
+      // This prevents processing when browser ends recognition on brief pauses
+      if (waitingForSilenceRef.current) {
+        console.log('[VoiceAssistant] ⏳ Waiting for silence timeout, not processing yet');
+        // Don't clear the silence timeout - let it complete naturally
+        return;
+      }
+      
+      // Only clear silence timeout if we're NOT waiting for it
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = null;
+      }
+      
+      // CRITICAL: Block processing if speech is active
+      if (speechActiveRef.current) {
+        console.log('[VoiceAssistant] 🚫 Blocking onend - speech is active');
+        vaStateRef.current = VA_STATE.IDLE;
+        return;
+      }
+      
+      // CRITICAL: Only process if we're still in LISTENING state
+      if (vaStateRef.current !== VA_STATE.LISTENING) {
+        console.log('[VoiceAssistant] Ignoring onend - state is:', vaStateRef.current);
+        return;
+      }
+      
+      const finalText = currentTranscriptRef.current.trim();
+      
+      // CRITICAL: Only process if we have a meaningful transcript
+      // Require at least 3 words OR 15 characters to avoid processing partial speech
+      const wordCount = finalText.split(/\s+/).filter(w => w.length > 0).length;
+      if (!finalText || wordCount < 3 || finalText.length < 15) {
+        console.log('[VoiceAssistant] Transcript too short, restarting recognition:', finalText, `(words: ${wordCount}, chars: ${finalText.length})`);
+        
+        // AUTO-RESTART: If transcript is too short, restart recognition to keep listening
+        // This handles the case where browser ends recognition on brief pauses
+        if (vaStateRef.current === VA_STATE.LISTENING && !speechActiveRef.current) {
+          try {
+            console.log('[VoiceAssistant] 🔄 Auto-restarting recognition to continue listening');
+            recognition.start();
+            setIsListening(true);
+            return;
+          } catch (err) {
+            console.error('[VoiceAssistant] Failed to restart recognition:', err);
+          }
+        }
+        
+        vaStateRef.current = VA_STATE.IDLE;
+        return;
+      }
+      
+      // CRITICAL: Check if this is feedback from AI speech
+      if (isLikelyFeedback(finalText, lastAIResponseRef.current)) {
+        console.log('[VoiceAssistant] 🚫 Filtering out feedback in onend:', finalText);
+        vaStateRef.current = VA_STATE.IDLE;
+        return;
+      }
+      
+      console.log('[VoiceAssistant] ✅ Valid transcript, processing:', finalText);
+      vaStateRef.current = VA_STATE.PROCESSING;
+      await processVoiceCommand(finalText);
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  };
+  }, [i18n.language, t]);
 
-  const processVoiceCommand = async (text) => {
+  const processVoiceCommand = useCallback(async (text) => {
+    // Guard: only process if we're in PROCESSING state
+    if (vaStateRef.current !== VA_STATE.PROCESSING) {
+      console.log('[VoiceAssistant] Not in processing state, ignoring');
+      return;
+    }
+
+    console.log('[VoiceAssistant] 🤖 Processing command:', text);
+
     try {
-      // Add user message to history
-      const newHistory = [...conversationHistory, { role: 'user', content: text }];
+      // Add user message to history (use ref for latest value)
+      const newHistory = [...conversationHistoryRef.current, { role: 'user', content: text }];
       
-      // Send to AI backend with longer timeout for voice chat
+      console.log('[VoiceAssistant] 📤 Sending to AI backend...');
+      
       const apiResponse = await api.post('/ai/chat', {
         message: text,
         language: i18n.language,
-        history: newHistory.slice(-6) // Keep last 6 messages
+        history: newHistory.slice(-6)
       }, {
-        timeout: 30000 // 30 second timeout for AI responses
+        timeout: 30000
       });
 
       if (apiResponse.data.success) {
         const aiText = apiResponse.data.text;
         const action = apiResponse.data.action;
 
-        // Update conversation history first
+        console.log('[VoiceAssistant] 📥 AI Response:', aiText);
+        if (action) {
+          console.log('[VoiceAssistant] 🎯 AI Action:', action);
+        }
+
+        // Store the AI response for feedback detection
+        lastAIResponseRef.current = aiText;
+
+        // Update conversation history
         const updatedHistory = [...newHistory, { role: 'assistant', content: aiText }];
         setConversationHistory(updatedHistory);
         setResponse(aiText);
 
-        // Execute action if present (before speaking to avoid delays)
+        // Execute action if present
         if (action) {
+          console.log('[VoiceAssistant] ⚡ Executing action...');
           await executeAction(action);
+          console.log('[VoiceAssistant] ✅ Action completed');
         }
 
-        // Speak the response last to avoid double-speaking
+        // Speak the response
         speak(aiText);
       } else {
-        // Show the actual error message from the API
         const errorMsg = apiResponse.data.message || 'AI service unavailable';
+        console.log('[VoiceAssistant] ❌ AI Error:', errorMsg);
         setResponse(errorMsg);
         speak(errorMsg);
       }
     } catch (error) {
-      console.error('Voice command failed:', error);
+      console.error('[VoiceAssistant] ❌ Voice command failed:', error);
       
-      // Extract and show the actual error message
       let errorMessage = 'Failed to process command';
       
       if (error.response) {
-        // Server responded with an error
         errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
       } else if (error.request) {
-        // Request was made but no response
         errorMessage = 'Cannot connect to server. Please check your connection.';
       } else if (error.code === 'ECONNABORTED') {
-        // Timeout
         errorMessage = 'Request timed out. Please try again.';
       } else if (error.message) {
         errorMessage = error.message;
       }
       
+      console.log('[VoiceAssistant] ❌ Error message:', errorMessage);
       setResponse(errorMessage);
       speak(errorMessage);
+    } finally {
+      console.log('[VoiceAssistant] 🏁 Processing complete');
+      // State will be set by speak() -> SPEAKING -> COOLDOWN -> IDLE
+      // If speak wasn't called (shouldn't happen), reset to idle
+      if (vaStateRef.current === VA_STATE.PROCESSING) {
+        vaStateRef.current = VA_STATE.IDLE;
+      }
     }
-  };
+  }, [i18n.language, speak]);
 
   const executeAction = async (action) => {
     try {
@@ -277,14 +524,33 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     }
   };
 
-  const toggleListening = () => {
+  const toggleListening = useCallback(() => {
+    // Only allow manual toggle when in IDLE state
+    if (vaStateRef.current !== VA_STATE.IDLE) {
+      console.log('[VoiceAssistant] Cannot toggle: current state is', vaStateRef.current);
+      
+      // If currently listening, allow stopping
+      if (isListening && recognitionRef.current) {
+        console.log('[VoiceAssistant] Stopping active recognition');
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+        setIsListening(false);
+        vaStateRef.current = VA_STATE.IDLE;
+      }
+      return;
+    }
+    
     if (isListening) {
-      recognitionRef.current?.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+      }
       setIsListening(false);
+      vaStateRef.current = VA_STATE.IDLE;
     } else {
       startListening();
     }
-  };
+  }, [isListening, startListening]);
 
   const clearConversation = () => {
     setConversationHistory([]);
