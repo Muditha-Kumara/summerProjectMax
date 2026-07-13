@@ -148,7 +148,11 @@ const GuestDashboard = () => {
       )}
 
       {/* Voice Assistant */}
-      <VoiceAssistant />
+      <VoiceAssistant 
+        rooms={rooms}
+        onRoomUpdate={fetchRooms}
+        onModeChange={handleQuickMode}
+      />
     </motion.div>
   );
 };

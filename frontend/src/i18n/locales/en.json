@@ -82,7 +82,14 @@
     "heardResponse": "I heard:",
     "askAbout": "You can ask about temperature, modes, or weather.",
     "youSaid": "You said:",
-    "tapMic": "Tap the microphone and speak a command"
+    "tapMic": "Tap the microphone and speak a command",
+    "error": "Sorry, I couldn't process that. Please try again.",
+    "voiceSpeed": "Voice Speed",
+    "selectVoice": "Select Voice",
+    "testVoice": "Test Voice",
+    "clearChat": "Clear Chat",
+    "speaking": "Speaking...",
+    "loadingVoices": "Loading voices..."
   },
   "weather": {
     "clear": "Clear",

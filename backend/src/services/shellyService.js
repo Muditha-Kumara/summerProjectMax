@@ -43,7 +43,7 @@ class ShellyService {
   async setRelayState(deviceId, channel = 0, turn = 'on') {
     try {
       const response = await axios.post(
-        `${this.apiUrl}/relay/switch`,
+        `${this.apiUrl}/device/relay/switch`,
         {
           id: deviceId,
           auth_key: this.authKey,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import useRoomStore from '../../contexts/roomStore';
@@ -8,6 +8,11 @@ const RoomCard = ({ room }) => {
   const { t } = useTranslation();
   const { updateRoomTemp } = useRoomStore();
   const [localTarget, setLocalTarget] = useState(Math.round(room.target_temp));
+
+  // Sync local state with room prop when it changes (e.g., from voice assistant)
+  useEffect(() => {
+    setLocalTarget(Math.round(room.target_temp));
+  }, [room.target_temp]);
 
   const handleTempChange = async (newTemp) => {
     setLocalTarget(newTemp);

@@ -58,17 +58,14 @@ class AIService {
       : 'Weather data unavailable';
 
     const langInstructions = {
-      fi: 'Vastaa suomeksi. Ole ystävällinen ja auttava.',
-      sv: 'Svara på svenska. Var vänlig och hjälpsam.',
-      en: 'Respond in English. Be friendly and helpful.',
+      fi: 'Vastaa suomeksi. Ole ystävällinen ja auttava. Pidä vastaukset lyhyinä.',
+      sv: 'Svara på svenska. Var vänlig och hjälpsam. Håll svaren korta.',
+      en: 'Respond in English. Be friendly and helpful. Keep responses short.',
     };
 
     return `You are a friendly voice assistant for a smart summer cottage heating system in Finland.
 
-## Context
-- This is a voice interface — keep responses SHORT (1-2 sentences max)
-- Speak naturally, as if talking to a guest at the cottage
-- The user may speak Finnish, Swedish, or English — respond in the SAME language they use
+${langInstructions[language] || langInstructions.en}
 
 ## Current Room Data
 ${roomSummary}
@@ -78,69 +75,39 @@ ${weatherInfo}
 
 ## What You Can Do
 - Report current temperatures in any room
-- Suggest temperature adjustments
-- Control room temperatures (set specific temperatures)
+- Set specific temperatures for rooms
 - Change heating modes (home, away, eco, comfort)
-- Explain heating modes and their effects
 - Give weather-based recommendations
 - Answer questions about the cottage heating system
 
-## Available Actions
-When the user wants to control something, include an "action" in your response using this JSON format:
-
-### Set Temperature
-\`\`\`json
+## How to Respond
+IMPORTANT: Always respond with valid JSON in this exact format:
 {
-  "text": "Setting the living room to 23 degrees.",
-  "action": {
-    "type": "setTemperature",
-    "roomId": 4,
-    "temperature": 23
-  }
+  "text": "Your spoken response here (1-2 sentences max)",
+  "action": { "type": "setTemperature", "roomId": 4, "temperature": 23 }
 }
-\`\`\`
 
-### Set Mode
-\`\`\`json
-{
-  "text": "Activating away mode. Temperatures will be reduced.",
-  "action": {
-    "type": "setMode",
-    "mode": "away"
-  }
-}
-\`\`\`
+The "action" field is OPTIONAL - only include it when the user wants to change something.
 
-### Available Modes
-- "home" - Normal comfort temperatures
-- "away" - Reduced temperatures for when nobody is home
-- "eco" - Energy saving mode
-- "comfort" - Maximum comfort mode
+### Action Types:
+1. Set temperature: { "type": "setTemperature", "roomId": <id>, "temperature": <number> }
+2. Set mode: { "type": "setMode", "mode": "home" | "away" | "eco" | "comfort" }
 
-## Room ID Reference
+## Room IDs
 ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
 
-## Rules
-- Keep responses SHORT (1-2 sentences) — this is voice, not chat
-- If the user asks to change something, confirm the action in your text
-- Always include the action JSON when the user wants to control something
-- Do not make up temperature values — use ONLY the data provided above
-- If unsure which room, ask for clarification
-- Never execute actions without confirming in your text response
-
-## Response Format
-Always respond with JSON containing "text" and optional "action":
-\`\`\`json
-{
-  "text": "Your spoken response here.",
-  "action": { ... } // optional
-}
-\`\`\`
-
-Example responses:
+## Examples:
 - User: "What's the temperature?" → {"text": "The living room is 21°C and the bedroom is 19°C."}
-- User: "Set living room to 23" → {"text": "Setting the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
+- User: "Set living room to 23 degrees" → {"text": "Setting the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
 - User: "I'm leaving" → {"text": "Activating away mode. See you soon!", "action": {"type": "setMode", "mode": "away"}}
+- User: "Make it warmer" → {"text": "I'll set the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
+
+## Rules:
+- Keep responses SHORT (1-2 sentences) - this is voice, not chat
+- Always respond with valid JSON
+- Only include "action" when the user wants to change something
+- Use ONLY the room data provided above - never make up temperatures
+- If unsure which room, ask for clarification
 `;
   }
 
@@ -149,8 +116,14 @@ Example responses:
    */
   static parseResponse(aiResponse) {
     try {
+      // Clean up the response - remove markdown code blocks if present
+      let cleanResponse = aiResponse.trim();
+      
+      // Remove ```json and ``` markers
+      cleanResponse = cleanResponse.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+      
       // Try to parse as JSON first
-      const parsed = JSON.parse(aiResponse);
+      const parsed = JSON.parse(cleanResponse);
       return {
         text: parsed.text || aiResponse,
         action: parsed.action || null,
@@ -169,6 +142,21 @@ Example responses:
           // Fall through to plain text
         }
       }
+      
+      // Try to find JSON object in the response
+      const jsonObjectMatch = aiResponse.match(/\{[\s\S]*"text"[\s\S]*\}/);
+      if (jsonObjectMatch) {
+        try {
+          const parsed = JSON.parse(jsonObjectMatch[0]);
+          return {
+            text: parsed.text || aiResponse,
+            action: parsed.action || null,
+          };
+        } catch {
+          // Fall through to plain text
+        }
+      }
+      
       // Return as plain text
       return {
         text: aiResponse,

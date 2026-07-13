@@ -82,7 +82,14 @@
     "heardResponse": "Jag hörde:",
     "askAbout": "Du kan fråga om temperatur, lägen eller väder.",
     "youSaid": "Du sa:",
-    "tapMic": "Tryck på mikrofonen och säg ett kommando"
+    "tapMic": "Tryck på mikrofonen och säg ett kommando",
+    "error": "Tyvärr, jag kunde inte behandla det. Försök igen.",
+    "voiceSpeed": "Rösthastighet",
+    "selectVoice": "Välj röst",
+    "testVoice": "Testa röst",
+    "clearChat": "Rensa chatt",
+    "speaking": "Talar...",
+    "loadingVoices": "Laddar röster..."
   },
   "weather": {
     "clear": "Klart",

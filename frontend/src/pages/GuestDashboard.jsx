@@ -100,7 +100,11 @@ const GuestDashboard = () => {
       </div>
 
       {/* Voice Assistant */}
-      <VoiceAssistant rooms={rooms} />
+      <VoiceAssistant 
+        rooms={rooms} 
+        onRoomUpdate={fetchRooms}
+        onModeChange={setCurrentMode}
+      />
     </div>
   );
 };

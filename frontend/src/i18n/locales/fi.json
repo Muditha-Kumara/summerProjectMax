@@ -82,7 +82,14 @@
     "heardResponse": "Kuulin:",
     "askAbout": "Voit kysyä lämpötilasta, tiloista tai säästä.",
     "youSaid": "Sanoit:",
-    "tapMic": "Paina mikrofonia ja puhu komento"
+    "tapMic": "Paina mikrofonia ja puhu komento",
+    "error": "Pahoittelut, en voinut käsitellä pyyntöäsi. Yritä uudelleen.",
+    "voiceSpeed": "Puhenopeus",
+    "selectVoice": "Valitse ääni",
+    "testVoice": "Testaa ääni",
+    "clearChat": "Tyhjennä keskustelu",
+    "speaking": "Puhutaan...",
+    "loadingVoices": "Ladataan ääniä..."
   },
   "weather": {
     "clear": "Selkeää",
