@@ -84,6 +84,34 @@ class OptimizationController {
     }
   }
 
+  // Apply scheduled away mode (with duration)
+  async scheduledAway(req, res) {
+    try {
+      const { durationHours } = req.body;
+
+      if (!durationHours || typeof durationHours !== 'number') {
+        return res.status(400).json({
+          success: false,
+          message: 'durationHours is required and must be a number'
+        });
+      }
+
+      const result = await OptimizationService.applyScheduledAway(durationHours);
+
+      return res.json({
+        success: result.success,
+        message: result.message,
+        data: result
+      });
+    } catch (error) {
+      logger.error('Scheduled away error', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to activate scheduled away mode'
+      });
+    }
+  }
+
   // Get spot prices
   async getSpotPrices(req, res) {
     try {

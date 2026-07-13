@@ -12,6 +12,7 @@ router.get('/cheapest-hours', optionalAuth, optimizationController.getCheapestHo
 router.post('/optimize-all', authenticateAdmin, optimizationController.optimizeAll);
 router.post('/temporary-leave/:roomId', optionalAuth, optimizationController.temporaryLeave);
 router.post('/quick-mode/:mode', optionalAuth, optimizationController.quickMode);
+router.post('/scheduled-away', optionalAuth, optimizationController.scheduledAway);
 router.get('/thermal-capacities', authenticateAdmin, optimizationController.getThermalCapacities);
 router.post('/thermal-capacity/:roomId', authenticateAdmin, optimizationController.calculateThermalCapacity);
 

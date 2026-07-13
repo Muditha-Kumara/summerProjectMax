@@ -1,6 +1,7 @@
 import Room from '../models/Room.js';
 import ThermalCapacity from '../models/ThermalCapacity.js';
 import SpotPrice from '../models/SpotPrice.js';
+import AwaySchedule from '../models/AwaySchedule.js';
 import WeatherService from './weatherService.js';
 import ShellyService from './shellyService.js';
 import logger from '../utils/logger.js';
@@ -238,6 +239,136 @@ class OptimizationService {
     };
 
     return modes[mode] || modes['home'];
+  }
+
+  /**
+   * Apply scheduled away mode - temporarily set away mode and schedule restoration
+   * @param {number} durationHours - How long the away mode should last (1-24 hours)
+   */
+  async applyScheduledAway(durationHours) {
+    try {
+      if (durationHours < 1 || durationHours > 24) {
+        return { success: false, message: 'Duration must be between 1 and 24 hours' };
+      }
+
+      const rooms = await Room.findAll();
+      
+      // Store current state for restoration
+      const previousTargetTemps = {};
+      let previousMode = null;
+      
+      for (const room of rooms) {
+        previousTargetTemps[room.id] = room.target_temp;
+        if (!previousMode) {
+          previousMode = room.control_mode;
+        }
+      }
+
+      // Calculate start and end times
+      const startTime = new Date();
+      const endTime = new Date();
+      endTime.setHours(endTime.getHours() + durationHours);
+
+      // Apply away mode to all rooms
+      const awaySettings = this.getQuickModeSettings('away');
+      
+      for (const room of rooms) {
+        // Apply safeguards first
+        const weather = await WeatherService.getCurrentWeather();
+        const outdoorTemp = weather.success ? weather.data.temperature : 0;
+        const safeguard = this.applySafeguards(room, outdoorTemp);
+
+        if (safeguard.override) {
+          await Room.updateTemperature(room.id, room.current_temp, safeguard.targetTemp);
+        } else {
+          await Room.updateTemperature(room.id, room.current_temp, awaySettings.targetTemp);
+        }
+        
+        await Room.updateControlMode(room.id, 'away');
+      }
+
+      // Create away schedule record for each room
+      for (const room of rooms) {
+        await AwaySchedule.create({
+          roomId: room.id,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          previousMode: previousMode,
+          previousTargetTemps: previousTargetTemps
+        });
+      }
+
+      logger.info(`Scheduled away mode activated for ${durationHours} hours`, {
+        rooms: rooms.length,
+        endTime: endTime.toISOString()
+      });
+
+      return {
+        success: true,
+        mode: 'away',
+        durationHours,
+        endTime: endTime.toISOString(),
+        roomsUpdated: rooms.length,
+        message: `Away mode activated for ${durationHours} hour${durationHours > 1 ? 's' : ''}. Will restore at ${endTime.toLocaleTimeString()}`
+      };
+    } catch (error) {
+      logger.error('Scheduled away mode error', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
+
+  /**
+   * Restore from away mode - called by cron job when away period ends
+   */
+  async restoreFromAway() {
+    try {
+      const expiredSchedules = await AwaySchedule.findActive();
+      
+      if (expiredSchedules.length === 0) {
+        return { success: true, message: 'No expired away schedules', restored: 0 };
+      }
+
+      let restoredCount = 0;
+
+      for (const schedule of expiredSchedules) {
+        const room = await Room.findById(schedule.room_id);
+        if (!room) continue;
+
+        // Restore previous target temperature
+        const previousTemps = schedule.previous_target_temps || {};
+        const previousTemp = previousTemps[room.id] || 21;
+        
+        await Room.updateTemperature(room.id, room.current_temp, previousTemp);
+        
+        // Restore previous mode
+        const previousMode = schedule.previous_mode || 'home';
+        await Room.updateControlMode(room.id, previousMode);
+
+        // Mark schedule as completed
+        await AwaySchedule.updateStatus(schedule.id, 'completed');
+
+        restoredCount++;
+        logger.info(`Restored room ${room.name} from away mode`, {
+          previousTemp,
+          previousMode
+        });
+      }
+
+      return {
+        success: true,
+        restored: restoredCount,
+        message: `Restored ${restoredCount} room${restoredCount > 1 ? 's' : ''} from away mode`
+      };
+    } catch (error) {
+      logger.error('Restore from away error', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
   }
 }
 

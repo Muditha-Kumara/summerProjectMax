@@ -551,9 +551,13 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
 
   const executeAction = async (action, voiceText = '') => {
     try {
+      console.log('[VoiceAssistant] 🔍 executeAction called with:', { action, voiceText });
       const token = localStorage.getItem('userToken') || localStorage.getItem('token');
       
+      console.log('[VoiceAssistant] 🔍 Checking action type:', action.type);
+      
       if (action.type === 'setTemperature' && action.roomId != null && action.temperature != null) {
+        console.log('[VoiceAssistant] 🔍 Matched setTemperature branch');
         const targetTemp = Number(action.temperature);
         const roomById = rooms?.find((room) => room.id === Number(action.roomId)) || null;
         const roomByVoiceText = findRoomByVoiceText(voiceText, targetTemp);
@@ -579,6 +583,29 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       } else if (action.type === 'setMode' && action.mode) {
         await api.post(`/optimization/quick-mode/${action.mode}`);
         if (onModeChange) onModeChange(action.mode);
+      } else if (action.type === 'setAwayMode' && action.durationHours != null) {
+        console.log('[VoiceAssistant] 🔍 Matched setAwayMode branch');
+        const duration = Number(action.durationHours);
+        console.log('[VoiceAssistant] ⏰ Setting scheduled away mode for', duration, 'hours');
+        
+        const response = await api.post('/optimization/scheduled-away', { durationHours: duration });
+        console.log('[VoiceAssistant] 🔍 API response:', response.data);
+        
+        if (response.data.success) {
+          console.log('[VoiceAssistant] ✅ Scheduled away mode activated');
+          if (onModeChange) {
+            console.log('[VoiceAssistant] 🔍 Calling onModeChange with "away"');
+            onModeChange('away');
+          } else {
+            console.warn('[VoiceAssistant] ⚠️ onModeChange callback not provided');
+          }
+          if (onRoomUpdate) onRoomUpdate();
+        } else {
+          console.warn('[VoiceAssistant] Failed to activate scheduled away mode:', response.data.message);
+          setResponse(response.data.message || 'Failed to activate away mode');
+        }
+      } else {
+        console.warn('[VoiceAssistant] ⚠️ No action branch matched. Action type:', action.type, 'Action:', action);
       }
     } catch (error) {
       console.error('Action execution failed:', error);

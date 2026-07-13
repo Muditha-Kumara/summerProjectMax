@@ -77,6 +77,7 @@ ${weatherInfo}
 - Report current temperatures in any room
 - Set specific temperatures for rooms
 - Change heating modes (home, away, eco, comfort)
+- Set temporary away mode with duration (e.g., "I'm going out for 2 hours")
 - Give weather-based recommendations
 - Answer questions about the cottage heating system
 
@@ -91,7 +92,8 @@ The "action" field is OPTIONAL - only include it when the user wants to change s
 
 ### Action Types:
 1. Set temperature: { "type": "setTemperature", "roomId": <id>, "temperature": <number> }
-2. Set mode: { "type": "setMode", "mode": "home" | "away" | "eco" | "comfort" }
+2. Set mode: { "type": "setMode", "mode": "home" | "eco" | "comfort" }
+3. Set away with duration: { "type": "setAwayMode", "durationHours": <number> }
 
 ## Room IDs
 ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
@@ -99,7 +101,8 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
 ## Examples:
 - User: "What's the temperature?" → {"text": "The living room is 21°C and the bedroom is 19°C."}
 - User: "Set living room to 23 degrees" → {"text": "Setting the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
-- User: "I'm leaving" → {"text": "Activating away mode. See you soon!", "action": {"type": "setMode", "mode": "away"}}
+- User: "I'm going out for 2 hours" → {"text": "Activating away mode for 2 hours. I'll restore the temperature when you return.", "action": {"type": "setAwayMode", "durationHours": 2}}
+- User: "I'm leaving for 3 hours" → {"text": "Setting away mode for 3 hours. See you soon!", "action": {"type": "setAwayMode", "durationHours": 3}}
 - User: "Make it warmer" → {"text": "I'll set the living room to 23 degrees.", "action": {"type": "setTemperature", "roomId": 4, "temperature": 23}}
 
 ## Rules:
@@ -111,6 +114,8 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
 - NEVER set a temperature outside the allowed range for a room
 - If the user says "set it" without specifying which room, ask for clarification
 - If the requested temperature is outside the allowed range, explain the valid range and ask for a new value
+- When user mentions going out/away/leaving with a duration, use "setAwayMode" action with durationHours
+- If user says "I'm leaving" without duration, ask how long they'll be gone
 `;
   }
 

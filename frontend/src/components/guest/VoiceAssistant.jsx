@@ -352,6 +352,27 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       } else if (action.type === 'setMode' && action.mode) {
         await api.post(`/optimization/quick-mode/${action.mode}`);
         if (onModeChange) onModeChange(action.mode);
+      } else if (action.type === 'setAwayMode' && action.durationHours != null) {
+        console.log('[VoiceAssistant] 🔍 Matched setAwayMode branch');
+        const duration = Number(action.durationHours);
+        console.log('[VoiceAssistant] ⏰ Setting scheduled away mode for', duration, 'hours');
+        
+        const response = await api.post('/optimization/scheduled-away', { durationHours: duration });
+        console.log('[VoiceAssistant] 🔍 API response:', response.data);
+        
+        if (response.data.success) {
+          console.log('[VoiceAssistant] ✅ Scheduled away mode activated');
+          if (onModeChange) {
+            console.log('[VoiceAssistant] 🔍 Calling onModeChange with "away"');
+            onModeChange('away');
+          } else {
+            console.warn('[VoiceAssistant] ⚠️ onModeChange callback not provided');
+          }
+          if (onRoomUpdate) onRoomUpdate();
+        } else {
+          console.warn('[VoiceAssistant] Failed to activate scheduled away mode:', response.data.message);
+          setResponse(response.data.message || 'Failed to activate away mode');
+        }
       }
     } catch (error) {
       console.error('Action execution failed:', error);

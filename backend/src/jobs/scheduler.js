@@ -25,6 +25,9 @@ class Scheduler {
     // Every 15 minutes: Check winter safeguards, adjust relays if needed
     this.scheduleSafeguardChecks();
 
+    // Every 5 minutes: Check for expired away schedules and restore
+    this.scheduleAwayRestoration();
+
     // Daily at midnight: Calculate thermal capacity updates
     this.scheduleDailyTasks();
 
@@ -76,6 +79,27 @@ class Scheduler {
 
     this.tasks.push(hourlyTask);
     logger.info('📌 Hourly optimization task scheduled (0 * * * *)');
+  }
+
+  /**
+   * Every 5 minutes (*/5 * * * *) - Check and restore expired away schedules
+   */
+  scheduleAwayRestoration() {
+    const awayRestorationTask = cron.schedule('*/5 * * * *', async () => {
+      logger.debug('🔄 Checking for expired away schedules...');
+
+      try {
+        const result = await OptimizationService.restoreFromAway();
+        if (result.restored > 0) {
+          logger.info(`✅ Restored ${result.restored} room(s) from away mode`);
+        }
+      } catch (error) {
+        logger.error('❌ Away restoration task error:', error);
+      }
+    });
+
+    this.tasks.push(awayRestorationTask);
+    logger.info('📌 Away restoration task scheduled (*/5 * * * *)');
   }
 
   /**

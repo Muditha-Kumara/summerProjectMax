@@ -131,6 +131,21 @@ CREATE TABLE IF NOT EXISTS automation_rules (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Away schedules (for temporary away mode with auto-restore)
+CREATE TABLE IF NOT EXISTS away_schedules (
+  id SERIAL PRIMARY KEY,
+  room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL,
+  previous_mode VARCHAR(50),
+  previous_target_temps JSONB,
+  status VARCHAR(50) DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_away_schedules_status_end_time ON away_schedules(status, end_time);
 `;
 
 export const runMigrations = async () => {

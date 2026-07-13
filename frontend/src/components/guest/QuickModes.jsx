@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
-const QuickModes = ({ onModeChange, onAwayClick }) => {
+const QuickModes = ({ onModeChange, onAwayClick, currentMode }) => {
   const { t } = useTranslation();
-  const [activeMode, setActiveMode] = useState('home');
+  const [activeMode, setActiveMode] = useState(currentMode || 'home');
+
+  // Sync with external mode changes (e.g., from voice assistant)
+  useEffect(() => {
+    if (currentMode) {
+      setActiveMode(currentMode);
+    }
+  }, [currentMode]);
 
   const modes = [
     { id: 'home', icon: '🏠', label: t('modes.home') },

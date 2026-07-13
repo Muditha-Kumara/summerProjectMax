@@ -16,6 +16,7 @@ const GuestDashboard = () => {
   const navigate = useNavigate();
   const { rooms, outdoorTemp, weather, loading, fetchRooms } = useRoomStore();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [currentMode, setCurrentMode] = useState('home');
 
   useEffect(() => {
     fetchRooms();
@@ -40,11 +41,17 @@ const GuestDashboard = () => {
     try {
       const response = await api.post(`/optimization/quick-mode/${mode}`);
       if (response.data.success) {
+        setCurrentMode(mode);
         fetchRooms();
       }
     } catch (error) {
       toast.error(t('alerts.error'));
     }
+  };
+
+  // Update mode state only (for voice assistant which already made the API call)
+  const updateModeState = (mode) => {
+    setCurrentMode(mode);
   };
 
   const handleTemporaryLeave = async (leaveData) => {
@@ -127,7 +134,7 @@ const GuestDashboard = () => {
       )}
 
       {/* Quick Modes */}
-      <QuickModes onModeChange={handleQuickMode} onAwayClick={() => setShowLeaveModal(true)} />
+      <QuickModes currentMode={currentMode} onModeChange={handleQuickMode} onAwayClick={() => setShowLeaveModal(true)} />
 
       {/* Room Cards */}
       <div>
@@ -151,7 +158,7 @@ const GuestDashboard = () => {
       <VoiceAssistant 
         rooms={rooms}
         onRoomUpdate={fetchRooms}
-        onModeChange={handleQuickMode}
+        onModeChange={updateModeState}
       />
     </motion.div>
   );
