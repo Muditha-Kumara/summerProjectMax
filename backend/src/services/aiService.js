@@ -277,6 +277,9 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
         { role: 'user', content: userMessage },
       ];
 
+      // Hard timeout so a stalled AI endpoint can't hang the voice loop
+      const controller = new AbortController();
+      const aiTimeout = setTimeout(() => controller.abort(), 20000);
       const response = await fetch(`${endpoint}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -288,8 +291,13 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
           messages,
           max_tokens: 300,
           temperature: 0.7,
+          // Qwen3 models think by default (~700 reasoning tokens = 15s+ per
+          // voice command). This assistant only needs a 1-2 sentence JSON
+          // answer, so disable thinking for fast responses.
+          enable_thinking: false,
         }),
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(aiTimeout));
 
       if (!response.ok) {
         const err = await response.text();

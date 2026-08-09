@@ -8,9 +8,19 @@ class WeatherService {
     this.lat = config.openWeather.lat;
     this.lon = config.openWeather.lon;
     this.units = config.openWeather.units;
+    // The AI voice prompt calls getCurrentWeather on EVERY chat request.
+    // Caching avoids an extra external HTTP round-trip per voice command,
+    // which is very noticeable on high-latency deployments.
+    this.currentCache = null;
+    this.currentCacheAt = 0;
+    this.CURRENT_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
   }
 
   async getCurrentWeather() {
+    const now = Date.now();
+    if (this.currentCache && now - this.currentCacheAt < this.CURRENT_CACHE_TTL_MS) {
+      return this.currentCache;
+    }
     try {
       const response = await axios.get(
         'https://api.openweathermap.org/data/2.5/weather',
@@ -20,12 +30,13 @@ class WeatherService {
             lon: this.lon,
             appid: this.apiKey,
             units: this.units
-          }
+          },
+          timeout: 5000 // never let a slow weather API stall the AI reply
         }
       );
 
       if (response.data) {
-        return {
+        const result = {
           success: true,
           data: {
             temperature: response.data.main.temp,
@@ -35,6 +46,9 @@ class WeatherService {
             icon: response.data.weather[0].icon
           }
         };
+        this.currentCache = result;
+        this.currentCacheAt = Date.now();
+        return result;
       }
 
       return {
@@ -43,6 +57,10 @@ class WeatherService {
       };
     } catch (error) {
       logger.error('OpenWeather API error - getCurrentWeather', error);
+      // Serve stale cache rather than failing the whole AI reply
+      if (this.currentCache) {
+        return this.currentCache;
+      }
       return {
         success: false,
         message: error.message

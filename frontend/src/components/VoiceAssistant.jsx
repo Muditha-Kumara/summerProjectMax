@@ -12,7 +12,7 @@ const VA_STATE = {
   COOLDOWN: 'cooldown',
 };
 
-const COOLDOWN_MS = 3000; // Time after speech ends before mic can listen again (3 seconds to prevent feedback)
+const COOLDOWN_MS = 1500; // Time after speech ends before mic can listen again (shortened so high-latency links don't eat the next command)
 
 const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const { t, i18n } = useTranslation();
@@ -312,17 +312,19 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         // Mark that we're waiting for silence timeout
         waitingForSilenceRef.current = true;
         
-        // Reset silence timer - wait 2 seconds of silence before processing
+        // Reset silence timer - wait 3 seconds of silence before processing
+        // (raised from 2s: on high-latency links recognition results arrive
+        // with gaps, and 2s truncated sentences mid-way)
         if (silenceTimeoutRef.current) {
           clearTimeout(silenceTimeoutRef.current);
         }
         silenceTimeoutRef.current = setTimeout(() => {
-          console.log('[VoiceAssistant] ⏱️ Silence detected (2s), stopping recognition');
+          console.log('[VoiceAssistant] ⏱️ Silence detected (3s), stopping recognition');
           waitingForSilenceRef.current = false;
           if (recognitionRef.current) {
             recognitionRef.current.stop();
           }
-        }, 2000);
+        }, 3000);
       } else if (interimTranscript) {
         // Show interim in UI for live feedback
         setTranscript(currentTranscriptRef.current.trim() + ' ' + interimTranscript);
@@ -335,12 +337,12 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
           clearTimeout(silenceTimeoutRef.current);
         }
         silenceTimeoutRef.current = setTimeout(() => {
-          console.log('[VoiceAssistant] ⏱️ Silence detected (2s), stopping recognition');
+          console.log('[VoiceAssistant] ⏱️ Silence detected (3s), stopping recognition');
           waitingForSilenceRef.current = false;
           if (recognitionRef.current) {
             recognitionRef.current.stop();
           }
-        }, 2000);
+        }, 3000);
       }
     };
 

@@ -64,7 +64,9 @@ resource "alicloud_instance" "app" {
 
 resource "alicloud_eip_address" "app" {
   address_name         = "${var.instance_name}-eip"
-  bandwidth            = "5"
+  # 5 Mbps starved real-time browser APIs (speech streaming, TLS handshakes)
+  # on the shared uplink; 50 Mbps with PayByTraffic stays cheap while idle.
+  bandwidth            = "50"
   internet_charge_type = "PayByTraffic"
   payment_type         = "PayAsYouGo"
 }
