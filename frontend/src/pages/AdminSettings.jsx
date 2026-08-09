@@ -104,7 +104,7 @@ function ApiKeysTab() {
     openWeatherLon: '24.9384',
     openWeatherUnits: 'metric',
     openai: '',
-    aiModel: 'qwen-turbo',
+    aiModel: 'qwen-plus',
     aiEndpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     smtpHost: '',
     smtpPort: '587',
@@ -477,7 +477,6 @@ function ApiKeysTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="qwen-turbo">Qwen Turbo (Fast, Cost-effective)</option>
               <option value="qwen-plus">Qwen Plus (Better Quality)</option>
               <option value="qwen-max">Qwen Max (Best Quality)</option>
             </select>

@@ -159,7 +159,7 @@ variable "ai_api_key" {
 variable "ai_model" {
   description = "AI model name."
   type        = string
-  default     = "qwen-turbo"
+  default     = "qwen-plus"
 }
 
 variable "ai_endpoint" {

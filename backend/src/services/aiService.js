@@ -23,7 +23,7 @@ class AIService {
   static async getModel() {
     let model = await SystemSettings.get('ai_model');
     if (!model) {
-      model = process.env.AI_MODEL || 'qwen-turbo';
+      model = process.env.AI_MODEL || 'qwen-plus';
     }
     return model;
   }
