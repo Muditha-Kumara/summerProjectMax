@@ -153,7 +153,7 @@ const seedData = async () => {
       { key: 'openweather_lon', value: process.env.OPENWEATHER_LON || '24.9384', description: 'Longitude for weather data' },
       { key: 'openweather_units', value: process.env.OPENWEATHER_UNITS || 'metric', description: 'Weather units (metric/imperial)' },
       { key: 'openai_api_key', value: process.env.OPENAI_API_KEY || '', description: 'OpenAI-compatible API key (DashScope/Qwen)' },
-      { key: 'ai_model', value: process.env.AI_MODEL || 'qwen-plus', description: 'AI model to use' },
+      { key: 'ai_model', value: process.env.AI_MODEL || 'qwen3.7-plus', description: 'AI model to use' },
       { key: 'ai_endpoint', value: process.env.AI_ENDPOINT || 'https://dashscope.aliyuncs.com/compatible-mode/v1', description: 'AI API endpoint base URL' },
       { key: 'smtp_host', value: process.env.SMTP_HOST || 'smtp.gmail.com', description: 'SMTP server host' },
       { key: 'smtp_port', value: process.env.SMTP_PORT || '587', description: 'SMTP server port' },

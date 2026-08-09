@@ -477,8 +477,9 @@ function ApiKeysTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="qwen-plus">Qwen Plus (Better Quality)</option>
-              <option value="qwen-max">Qwen Max (Best Quality)</option>
+              <option value="qwen3.7-plus">Qwen 3.7 Plus (Better Quality)</option>
+              <option value="qwen3.7-max">Qwen 3.7 Max (Best Quality)</option>
+              <option value="qwen3.7-flash">Qwen 3.7 Flash (Fastest)</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
               Voice assistant will use this model for natural language conversations
