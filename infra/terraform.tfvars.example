@@ -1,0 +1,25 @@
+# Copy to terraform.tfvars (gitignored) OR export as TF_VAR_* env vars.
+# Env vars win over this file. Never commit real values.
+
+region        = "eu-central-1"
+instance_name = "smart-heating-demo"
+# instance_type = "ecs.e-c1m1.large"  # economy 2c2g; try ecs.t6-c1m2.large if unavailable
+
+# instance_password = "..."   # required
+# db_password       = "..."   # required
+# jwt_secret        = "..."   # required
+
+# ssh_allowed_cidrs = ["203.0.113.10/32"]
+
+# Optional app integrations (leave empty to disable)
+# jwt_refresh_secret  = ""
+# openweather_api_key = ""
+# smtp_user           = ""
+# smtp_pass           = ""
+# smtp_from           = "Smart Heating <you@example.com>"
+# ai_api_key          = ""
+# ai_model            = "qwen-turbo"
+# ai_endpoint         = ""
+# shelly_auth_key     = ""
+# shelly_server_id    = ""
+# use_mock_prices     = true

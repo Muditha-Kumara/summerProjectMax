@@ -46,3 +46,16 @@ backend/tmp/
 # Frontend runtime data
 frontend/.vite/
 frontend/dist/
+
+# Terraform (contains secrets in state — never commit)
+infra/.terraform/
+infra/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# Local secret env files
+infra/myenv.sh
+myenv.sh
