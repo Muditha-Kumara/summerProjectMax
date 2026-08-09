@@ -1,25 +1,30 @@
 # Copy to terraform.tfvars (gitignored) OR export as TF_VAR_* env vars.
 # Env vars win over this file. Never commit real values.
+#
+# NOTE: deploy.sh auto-loads API keys (OpenWeather, SMTP, AI, Shelly, etc.)
+# from the project root .env file. You only need to set the values below
+# that are NOT in .env — mainly instance_password and Alibaba Cloud creds.
+# To override a .env value, set the TF_VAR_* here or in myenv.sh.
 
 region        = "eu-central-1"
 instance_name = "smart-heating-demo"
-# instance_type = "ecs.e-c1m1.large"  # economy 2c2g; try ecs.t6-c1m2.large if unavailable
+# instance_type = "ecs.u2i-c1m2.large"  # must match the live instance, else apply tries ModifyInstanceSpec and fails
 
-# instance_password = "..."   # required
-# db_password       = "..."   # required
-# jwt_secret        = "..."   # required
+# instance_password = "..."   # required (set in myenv.sh)
+# db_password       = "..."   # auto-loaded from .env POSTGRES_PASSWORD
+# jwt_secret        = "..."   # auto-loaded from .env JWT_SECRET
 
 # ssh_allowed_cidrs = ["203.0.113.10/32"]
 
-# Optional app integrations (leave empty to disable)
+# Optional overrides (auto-loaded from ../.env by deploy.sh)
 # jwt_refresh_secret  = ""
-# openweather_api_key = ""
-# smtp_user           = ""
-# smtp_pass           = ""
-# smtp_from           = "Smart Heating <you@example.com>"
-# ai_api_key          = ""
-# ai_model            = "qwen-plus"
-# ai_endpoint         = ""
-# shelly_auth_key     = ""
-# shelly_server_id    = ""
-# use_mock_prices     = true
+# openweather_api_key = ""    # from .env OPENWEATHER_API_KEY
+# smtp_user           = ""    # from .env SMTP_USER
+# smtp_pass           = ""    # from .env SMTP_PASS
+# smtp_from           = ""    # from .env SMTP_FROM
+# ai_api_key          = ""    # from .env OPENAI_API_KEY
+# ai_model            = ""    # from .env AI_MODEL
+# ai_endpoint         = ""    # from .env AI_ENDPOINT
+# shelly_auth_key     = ""    # from .env SHELLY_AUTH_KEY
+# shelly_server_id    = ""    # from .env SHELLY_SERVER_ID
+# use_mock_prices     = true  # from .env USE_MOCK_PRICES

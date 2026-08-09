@@ -15,9 +15,9 @@ variable "instance_name" {
 }
 
 variable "instance_type" {
-  description = "ECS instance type. ecs.e-c1m1.large = economy 2 vCPU / 2 GiB (cheapest general-purpose). If unavailable in the region, try ecs.t6-c1m2.large or ecs.u1-c1m2.large."
+  description = "ECS instance type. Must match the live instance (eu-central-1: ecs.u2i-c1m2.large, 2 vCPU / 4 GiB), otherwise apply attempts ModifyInstanceSpec and fails with InvalidInstanceType.ValueNotSupported. Override with TF_VAR_instance_type only when deploying fresh in another region."
   type        = string
-  default     = "ecs.e-c1m1.large"
+  default     = "ecs.u2i-c1m2.large"
 }
 
 variable "system_disk_category" {
