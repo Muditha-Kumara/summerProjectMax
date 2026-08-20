@@ -1,11 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isAdminLogin = location.pathname === '/admin';
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -32,8 +38,48 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Mobile Header */}
+      <header className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between bg-gray-900 px-4 py-3 shadow-lg lg:hidden">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🔥</span>
+          <span className="text-xl font-bold text-white">Admin Panel</span>
+        </div>
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="rounded-md p-2 text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-400"
+          aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
+        >
+          <svg
+            className="h-7 w-7"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {isSidebarOpen ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            )}
+          </svg>
+        </button>
+      </header>
+
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-gray-900 text-white shadow-xl">
+      <aside
+        className={`fixed left-0 top-0 z-20 h-full w-64 bg-gray-900 text-white shadow-xl transition-transform duration-300 lg:translate-x-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="p-6">
           <h1 className="text-2xl font-bold text-primary-400">🔥 Admin Panel</h1>
           <p className="text-sm text-gray-400 mt-1">Smart Heating System</p>
@@ -44,6 +90,7 @@ const AdminLayout = () => {
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => setIsSidebarOpen(false)}
               className={`flex items-center gap-3 px-6 py-4 text-lg transition-colors ${
                 location.pathname === item.path
                   ? 'bg-primary-600 text-white border-r-4 border-primary-400'
@@ -67,8 +114,21 @@ const AdminLayout = () => {
         </div>
       </aside>
 
+      {/* Overlay for mobile sidebar */}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSidebarOpen(false)}
+            className="fixed inset-0 z-10 bg-black/50 lg:hidden"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Main Content */}
-      <main className="ml-64 p-8">
+      <main className="pt-16 lg:pt-0 lg:ml-64 p-4 sm:p-6 lg:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

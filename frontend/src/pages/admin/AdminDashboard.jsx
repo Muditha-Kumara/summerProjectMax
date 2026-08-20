@@ -88,7 +88,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -114,14 +114,14 @@ export default function AdminDashboard() {
 
       {/* System Status Bar */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <StatusIndicator label="Backend API" status={apiStatus.backend} />
             <StatusIndicator label="Weather Service" status={apiStatus.weather} />
             <StatusIndicator label="Price Data" status={apiStatus.prices} />
           </div>
           {outdoorTemp !== null && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg">
+            <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg w-fit">
               <span className="text-2xl">🌡️</span>
               <div>
                 <p className="text-xs text-gray-500">Outdoor</p>
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           title="Total Rooms"
           value={stats.totalRooms}
@@ -207,8 +207,8 @@ export default function AdminDashboard() {
               View All →
             </Link>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold text-gray-600">Guest</th>
@@ -291,13 +291,13 @@ function StatCard({ title, value, subtitle, icon, color }) {
   };
   return (
     <div className={`rounded-xl border p-5 ${colorClasses[color] || colorClasses.blue}`}>
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-sm text-gray-600 font-medium">{title}</p>
-          <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+          <p className="text-2xl font-bold text-gray-800 mt-1 truncate">{value}</p>
+          {subtitle && <p className="text-xs text-gray-500 mt-1 truncate">{subtitle}</p>}
         </div>
-        <span className="text-3xl opacity-60">{icon}</span>
+        <span className="text-3xl opacity-60 shrink-0">{icon}</span>
       </div>
     </div>
   );
@@ -310,12 +310,12 @@ function QuickActionCard({ title, description, icon, link }) {
       className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition-all group"
     >
       <div className="flex items-center gap-4">
-        <span className="text-3xl group-hover:scale-110 transition-transform">{icon}</span>
-        <div>
-          <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+        <span className="text-3xl group-hover:scale-110 transition-transform shrink-0">{icon}</span>
+        <div className="min-w-0">
+          <h3 className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors truncate">
             {title}
           </h3>
-          <p className="text-sm text-gray-500">{description}</p>
+          <p className="text-sm text-gray-500 truncate">{description}</p>
         </div>
       </div>
     </Link>
