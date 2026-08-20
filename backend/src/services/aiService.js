@@ -142,7 +142,7 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
   /**
    * Parse AI response to extract text and action
    */
-  static parseResponse(aiResponse) {
+  static async parseResponse(aiResponse) {
     try {
       // Clean up the response - remove markdown code blocks if present
       let cleanResponse = aiResponse.trim();
@@ -186,7 +186,7 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
       }
       
       // FALLBACK: Detect intent from plain text when AI doesn't return JSON
-      const fallbackAction = this.detectIntentFromText(aiResponse);
+      const fallbackAction = await this.detectIntentFromText(aiResponse);
       
       if (fallbackAction) {
         logger.warn('AI returned plain text, using fallback intent detection', { 
@@ -204,12 +204,40 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
 
   /**
    * Fallback intent detection when AI doesn't return proper JSON
-   * Detects mode changes and other actions from plain text responses
+   * Detects mode changes, temperature changes, and other actions from plain text responses
    */
-  static detectIntentFromText(text) {
+  static async detectIntentFromText(text) {
     const normalized = text.toLowerCase();
-    
-    // Mode detection - look for phrases indicating mode changes
+
+    // ---- Temperature detection ----
+    // Patterns: "set X to 15°C", "setting X to 15 degrees", "X to 15°C"
+    const tempPatterns = [
+      /(?:set|setting|change|changing)\s+(?:the\s+)?(.+?)\s+to\s+(\d+)\s*(?:°[cC]|degrees?|deg)?/i,
+      /(.+?)\s+(?:to|at)\s+(\d+)\s*(?:°[cC]|degrees?|deg)/i,
+    ];
+
+    for (const pattern of tempPatterns) {
+      const match = normalized.match(pattern);
+      if (match) {
+        const roomName = match[1].trim();
+        const temperature = parseInt(match[2], 10);
+
+        // Try to find room by name
+        const rooms = await Room.findAll();
+        const room = rooms.find((r) => {
+          const names = [r.name, r.name_en, r.name_fi, r.name_sv]
+            .filter(Boolean)
+            .map((n) => n.toLowerCase());
+          return names.some((n) => roomName.includes(n) || n.includes(roomName));
+        });
+
+        if (room && temperature >= room.min_temp && temperature <= room.max_temp) {
+          return { type: 'setTemperature', roomId: room.id, temperature };
+        }
+      }
+    }
+
+    // ---- Mode detection ----
     if (normalized.includes('set to home mode') || 
         normalized.includes('set the system to home') || 
         normalized.includes('changed to home mode') ||
@@ -290,7 +318,11 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
           model,
           messages,
           max_tokens: 300,
-          temperature: 0.7,
+          // Low temperature for deterministic JSON output (voice commands need
+          // structured responses, not creative variation)
+          temperature: 0.2,
+          // Force JSON output so the model never returns plain text
+          response_format: { type: 'json_object' },
           // Qwen3 models think by default (~700 reasoning tokens = 15s+ per
           // voice command). This assistant only needs a 1-2 sentence JSON
           // answer, so disable thinking for fast responses.
@@ -315,7 +347,7 @@ ${rooms.map(r => `- ${r.name}: id ${r.id}`).join('\n')}
       logger.info('AI raw response', { rawReply: rawReply.substring(0, 300) });
       
       // Parse the response to extract text and action
-      const parsed = this.parseResponse(rawReply);
+      const parsed = await this.parseResponse(rawReply);
       
       // Log parsed result
       logger.info('AI parsed response', { 
