@@ -45,19 +45,19 @@ export function RoomOverviewGrid({ rooms = [] }) {
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-gray-900">{room.name}</h3>
-            <ControlModeBadge mode={room.controlMode} />
+            <ControlModeBadge mode={room.control_mode || room.controlMode} />
           </div>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
               <span className="text-gray-500">Current Temp</span>
               <span className="font-medium">
-                {room.currentTemp ?? '--'}°C
+                {room.current_temp ?? room.currentTemp ?? '--'}°C
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Target Temp</span>
               <span className="font-medium">
-                {room.targetTemp ?? '--'}°C
+                {room.target_temp ?? room.targetTemp ?? '--'}°C
               </span>
             </div>
           </div>
