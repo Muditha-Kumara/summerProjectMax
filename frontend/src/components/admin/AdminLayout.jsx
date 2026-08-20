@@ -76,16 +76,16 @@ const AdminLayout = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-20 h-full w-64 bg-gray-900 text-white shadow-xl transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-20 h-full w-64 bg-gray-900 text-white shadow-xl transition-transform duration-300 lg:translate-x-0 flex flex-col ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-6">
+        <div className="p-6 shrink-0">
           <h1 className="text-2xl font-bold text-primary-400">🔥 Admin Panel</h1>
           <p className="text-sm text-gray-400 mt-1">Smart Heating System</p>
         </div>
 
-        <nav className="mt-6">
+        <nav className="mt-2 flex-1 overflow-y-auto">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -103,7 +103,7 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6">
+        <div className="p-6 shrink-0">
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
