@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
+
+const PANEL_AUTO_CLOSE_MS = 2000; // Time after speaking before panel auto-dismisses
 
 const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const { t, i18n } = useTranslation();
@@ -22,6 +24,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const pendingTranscriptRef = useRef('');
   const transcriptDebounceRef = useRef(null);
   const transcriptHandledRef = useRef(false);
+  const autoCloseTimeoutRef = useRef(null);
 
   const clearTranscriptDebounce = () => {
     if (transcriptDebounceRef.current) {
@@ -29,6 +32,42 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       transcriptDebounceRef.current = null;
     }
   };
+
+  // Auto-close panel helpers
+  const scheduleAutoClose = useCallback(() => {
+    if (autoCloseTimeoutRef.current) {
+      clearTimeout(autoCloseTimeoutRef.current);
+    }
+    autoCloseTimeoutRef.current = setTimeout(() => {
+      autoCloseTimeoutRef.current = null;
+      setShowPanel(false);
+      setShowSettings(false);
+    }, PANEL_AUTO_CLOSE_MS);
+  }, []);
+
+  const cancelAutoClose = useCallback(() => {
+    if (autoCloseTimeoutRef.current) {
+      clearTimeout(autoCloseTimeoutRef.current);
+      autoCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  // When panel is visible and idle (not listening/speaking/processing), auto-close
+  useEffect(() => {
+    if (showPanel && !isListening && !isSpeaking && !isProcessingRef.current) {
+      scheduleAutoClose();
+    }
+    if (!showPanel) {
+      cancelAutoClose();
+    }
+  }, [showPanel, isListening, isSpeaking, scheduleAutoClose, cancelAutoClose]);
+
+  // Cleanup auto-close on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimeoutRef.current) clearTimeout(autoCloseTimeoutRef.current);
+    };
+  }, []);
 
   // Load available voices
   useEffect(() => {
@@ -419,6 +458,8 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            onMouseEnter={cancelAutoClose}
+            onMouseLeave={scheduleAutoClose}
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold text-gray-800">

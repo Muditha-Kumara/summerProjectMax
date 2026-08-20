@@ -13,6 +13,7 @@ const VA_STATE = {
 };
 
 const COOLDOWN_MS = 1500; // Time after speech ends before mic can listen again (shortened so high-latency links don't eat the next command)
+const PANEL_AUTO_CLOSE_MS = 2000; // Time after cooldown before the panel auto-dismisses
 
 const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const { t, i18n } = useTranslation();
@@ -22,6 +23,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const [response, setResponse] = useState('');
   const [showPanel, setShowPanel] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [vaState, setVaState] = useState(VA_STATE.IDLE); // React state for triggering re-renders
   const [conversationHistory, setConversationHistory] = useState([]);
   const [voiceSpeed, setVoiceSpeed] = useState(1.0);
   const [selectedVoice, setSelectedVoice] = useState(null);
@@ -30,6 +32,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const synthRef = useRef(window.speechSynthesis);
   const speechTimeoutRef = useRef(null);
   const cooldownTimeoutRef = useRef(null);
+  const autoCloseTimeoutRef = useRef(null); // Timer to auto-close panel after interaction
   const silenceTimeoutRef = useRef(null); // Wait for silence before processing
   const waitingForSilenceRef = useRef(false); // Track if we're waiting for silence timeout
   const voiceSpeedRef = useRef(voiceSpeed);
@@ -135,10 +138,42 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     return () => {
       if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
       if (cooldownTimeoutRef.current) clearTimeout(cooldownTimeoutRef.current);
+      if (autoCloseTimeoutRef.current) clearTimeout(autoCloseTimeoutRef.current);
       synthRef.current?.cancel();
       recognitionRef.current?.abort();
     };
   }, []);
+
+  // Auto-close panel after a delay (cancelled if user interacts)
+  const scheduleAutoClose = useCallback(() => {
+    // Clear any existing auto-close timer
+    if (autoCloseTimeoutRef.current) {
+      clearTimeout(autoCloseTimeoutRef.current);
+    }
+    autoCloseTimeoutRef.current = setTimeout(() => {
+      autoCloseTimeoutRef.current = null;
+      console.log('[VoiceAssistant] ⏱️ Auto-closing voice panel');
+      setShowPanel(false);
+      setShowSettings(false);
+    }, PANEL_AUTO_CLOSE_MS);
+  }, []);
+
+  const cancelAutoClose = useCallback(() => {
+    if (autoCloseTimeoutRef.current) {
+      clearTimeout(autoCloseTimeoutRef.current);
+      autoCloseTimeoutRef.current = null;
+    }
+  }, []);
+
+  // When panel becomes visible and VA is idle, schedule auto-close
+  useEffect(() => {
+    if (showPanel && vaState === VA_STATE.IDLE && !isListening && !isSpeaking) {
+      scheduleAutoClose();
+    }
+    if (!showPanel) {
+      cancelAutoClose();
+    }
+  }, [showPanel, vaState, isListening, isSpeaking, scheduleAutoClose, cancelAutoClose]);
 
   const speak = useCallback((text) => {
     if (!synthRef.current || !text) return;
@@ -169,6 +204,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     
     // Set state to SPEAKING immediately to block any new recognition
     vaStateRef.current = VA_STATE.SPEAKING;
+    setVaState(VA_STATE.SPEAKING);
 
     // Clear any pending speech to prevent double-speaking
     if (speechTimeoutRef.current) {
@@ -201,13 +237,17 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         setIsSpeaking(false);
         // Enter cooldown period to prevent feedback loop
         vaStateRef.current = VA_STATE.COOLDOWN;
+        setVaState(VA_STATE.COOLDOWN);
         console.log('[VoiceAssistant] ⏳ Entering cooldown period...');
         cooldownTimeoutRef.current = setTimeout(() => {
           cooldownTimeoutRef.current = null;
           vaStateRef.current = VA_STATE.IDLE;
+          setVaState(VA_STATE.IDLE);
           // CRITICAL: Clear speech active flag after cooldown
           speechActiveRef.current = false;
           console.log('[VoiceAssistant] ✅ Cooldown complete, ready for next command');
+          // Schedule auto-close of the voice panel
+          scheduleAutoClose();
         }, COOLDOWN_MS);
       };
       utterance.onerror = (e) => {
@@ -216,11 +256,15 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         }
         setIsSpeaking(false);
         vaStateRef.current = VA_STATE.COOLDOWN;
+        setVaState(VA_STATE.COOLDOWN);
         cooldownTimeoutRef.current = setTimeout(() => {
           cooldownTimeoutRef.current = null;
           vaStateRef.current = VA_STATE.IDLE;
+          setVaState(VA_STATE.IDLE);
           // CRITICAL: Clear speech active flag after cooldown
           speechActiveRef.current = false;
+          // Schedule auto-close of the voice panel
+          scheduleAutoClose();
         }, COOLDOWN_MS);
       };
 
@@ -256,6 +300,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
 
     console.log('[VoiceAssistant] 🎤 Starting to listen...');
     vaStateRef.current = VA_STATE.LISTENING;
+    setVaState(VA_STATE.LISTENING);
     
     const recognition = new SpeechRecognition();
     recognition.lang = i18n.language === 'fi' ? 'fi-FI' : i18n.language === 'sv' ? 'sv-SE' : 'en-US';
@@ -270,6 +315,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       setTranscript('');
       setResponse('');
       currentTranscriptRef.current = '';
+      cancelAutoClose(); // Cancel any pending auto-close since user is interacting
       
       // Set maximum listening time (10 seconds) to prevent infinite listening
       silenceTimeoutRef.current = setTimeout(() => {
@@ -350,6 +396,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       console.error('[VoiceAssistant] Recognition error:', event.error);
       setIsListening(false);
       vaStateRef.current = VA_STATE.IDLE;
+      setVaState(VA_STATE.IDLE);
       if (event.error !== 'aborted' && event.error !== 'no-speech') {
         setResponse(t('voice.couldNotUnderstand') || 'Could not understand');
       }
@@ -377,6 +424,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       if (speechActiveRef.current) {
         console.log('[VoiceAssistant] 🚫 Blocking onend - speech is active');
         vaStateRef.current = VA_STATE.IDLE;
+        setVaState(VA_STATE.IDLE);
         return;
       }
       
@@ -408,6 +456,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         }
         
         vaStateRef.current = VA_STATE.IDLE;
+        setVaState(VA_STATE.IDLE);
         return;
       }
       
@@ -415,17 +464,19 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       if (isLikelyFeedback(finalText, lastAIResponseRef.current)) {
         console.log('[VoiceAssistant] 🚫 Filtering out feedback in onend:', finalText);
         vaStateRef.current = VA_STATE.IDLE;
+        setVaState(VA_STATE.IDLE);
         return;
       }
       
       console.log('[VoiceAssistant] ✅ Valid transcript, processing:', finalText);
       vaStateRef.current = VA_STATE.PROCESSING;
+      setVaState(VA_STATE.PROCESSING);
       await processVoiceCommand(finalText);
     };
 
     recognitionRef.current = recognition;
     recognition.start();
-  }, [i18n.language, t]);
+  }, [i18n.language, t, cancelAutoClose]);
 
   const processVoiceCommand = useCallback(async (text) => {
     // Guard: only process if we're in PROCESSING state
@@ -503,9 +554,11 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     } finally {
       console.log('[VoiceAssistant] 🏁 Processing complete');
       // State will be set by speak() -> SPEAKING -> COOLDOWN -> IDLE
-      // If speak wasn't called (shouldn't happen), reset to idle
+      // If speak wasn't called (shouldn't happen), reset to idle & schedule auto-close
       if (vaStateRef.current === VA_STATE.PROCESSING) {
         vaStateRef.current = VA_STATE.IDLE;
+        setVaState(VA_STATE.IDLE);
+        scheduleAutoClose();
       }
     }
   }, [i18n.language, speak]);
@@ -626,6 +679,8 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
         recognitionRef.current = null;
         setIsListening(false);
         vaStateRef.current = VA_STATE.IDLE;
+        setVaState(VA_STATE.IDLE);
+        cancelAutoClose(); // Cancel auto-close so user can read the panel
       }
       return;
     }
@@ -637,6 +692,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       }
       setIsListening(false);
       vaStateRef.current = VA_STATE.IDLE;
+      setVaState(VA_STATE.IDLE);
     } else {
       startListening();
     }
@@ -673,6 +729,8 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
             initial={{ opacity: 0, y: 20, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            onMouseEnter={cancelAutoClose}
+            onMouseLeave={scheduleAutoClose}
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold text-gray-800">
