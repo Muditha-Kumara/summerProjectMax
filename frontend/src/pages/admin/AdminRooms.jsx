@@ -172,8 +172,8 @@ const AdminRooms = () => {
                         <input
                           type="number"
                           step="0.5"
-                          min="5"
-                          max="35"
+                          min={room.min_temp || 5}
+                          max={room.max_temp || 65}
                           defaultValue={room.target_temp}
                           className="w-24 px-2 py-1 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                           onKeyDown={(e) => {
