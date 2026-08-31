@@ -104,6 +104,24 @@
     "leaveActivated": "Tillfällig bortovaro aktiverad",
     "error": "Något gick fel"
   },
+  "energy": {
+    "title": "Energiförbrukning",
+    "today": "Idag",
+    "week": "Vecka",
+    "month": "Månad",
+    "year": "År",
+    "consumption": "Förbrukning",
+    "totalConsumption": "Total förbrukning",
+    "cost": "Kostnad",
+    "avgPrice": "Medelpris",
+    "byDevice": "Per rum",
+    "timeseries": "Energiförbrukning över tid",
+    "spotPrice": "Spotpris",
+    "usageBreakdown": "Förbrukningsfördelning",
+    "roomEnergy": "Energi per rum",
+    "roomCost": "Kostnad per rum",
+    "noData": "Ingen energidata för denna period."
+  },
   "language": {
     "fi": "Suomi",
     "sv": "Svenska",

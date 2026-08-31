@@ -149,6 +149,146 @@ class CostService {
   }
 
   /**
+   * Get time-series cost/energy/price data for charting.
+   * Fills ALL time slots so the chart always has a complete axis.
+   * Day   → 24 hourly buckets.  Week/Month → daily buckets.  Year → monthly buckets.
+   * @param {Date} startDate - Start date
+   * @param {Date} endDate - End date
+   * @returns {Array} Timeseries data points
+   */
+  async getTimeseries(startDate, endDate) {
+    try {
+      const Room = (await import('../models/Room.js')).default;
+      const rooms = await Room.findAll();
+      const rangeDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+
+      const contract = await ElectricityContract.findActive();
+
+      // Decide bucket strategy
+      let generateSlots, slotLabel;
+      if (rangeDays <= 1) {
+        // Day: 24 hourly slots 0-23
+        generateSlots = () => {
+          const slots = [];
+          const base = new Date(startDate);
+          for (let h = 0; h < 24; h++) {
+            const slot = new Date(base);
+            slot.setHours(h, 0, 0, 0);
+            slots.push(slot);
+          }
+          return slots;
+        };
+        slotLabel = (d) => `${String(d.getHours()).padStart(2, '0')}:00`;
+      } else if (rangeDays <= 31) {
+        // Week/Month: daily slots
+        generateSlots = () => {
+          const slots = [];
+          const cur = new Date(startDate);
+          while (cur < endDate) {
+            slots.push(new Date(cur));
+            cur.setDate(cur.getDate() + 1);
+          }
+          return slots;
+        };
+        slotLabel = (d) => {
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${m}-${day}`;
+        };
+      } else {
+        // Year: monthly slots
+        generateSlots = () => {
+          const slots = [];
+          const cur = new Date(startDate.getFullYear(), 0, 1);
+          const end = new Date(endDate);
+          while (cur < end) {
+            slots.push(new Date(cur));
+            cur.setMonth(cur.getMonth() + 1);
+          }
+          return slots;
+        };
+        slotLabel = (d) => {
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return months[d.getMonth()];
+        };
+      }
+
+      const slots = generateSlots();
+
+      // Fetch all raw data for every room in one pass
+      const allRawData = [];
+      for (const room of rooms) {
+        const rows = await HistoricalData.findByRoomAndDateRange(room.id, startDate, endDate);
+        for (const row of rows) {
+          allRawData.push({ ...row, roomId: room.id, roomName: room.name });
+        }
+      }
+
+      // Build result: one entry per slot, all rooms as flat keys
+      const result = [];
+      for (const slotStart of slots) {
+        const slotEnd = new Date(slotStart);
+        if (rangeDays <= 1) slotEnd.setHours(slotEnd.getHours() + 1);
+        else if (rangeDays <= 31) slotEnd.setDate(slotEnd.getDate() + 1);
+        else slotEnd.setMonth(slotEnd.getMonth() + 1);
+
+        const bucket = allRawData.filter((row) => {
+          const t = new Date(row.timestamp);
+          return t >= slotStart && t < slotEnd;
+        });
+
+        const entry = {
+          label: slotLabel(slotStart),
+          timestamp: slotStart.toISOString(),
+        };
+
+        // Per-room energy
+        let totalEnergy = 0;
+        let spotPriceSum = 0;
+        let spotPriceCount = 0;
+
+        for (const room of rooms) {
+          const roomRows = bucket.filter((r) => r.roomId === room.id);
+          const energy = roomRows.reduce((sum, r) => sum + parseFloat(r.energy_consumption || 0), 0);
+          entry[`room_${room.id}`] = Math.round(energy * 1000) / 1000;
+          totalEnergy += energy;
+        }
+
+        // Spot price from bucket data
+        for (const row of bucket) {
+          if (spotPriceCount === 0 && row.spot_price != null) {
+            spotPriceSum = parseFloat(row.spot_price);
+            spotPriceCount = 1;
+          }
+        }
+
+        // If no spot price in bucket, fallback to closest
+        if (spotPriceCount === 0) {
+          const midPoint = new Date((slotStart.getTime() + slotEnd.getTime()) / 2);
+          const spotPrice = await SpotPrice.findClosestToTimestamp(midPoint);
+          if (spotPrice) {
+            spotPriceSum = parseFloat(spotPrice.price);
+            spotPriceCount = 1;
+          }
+        }
+
+        const avgSpotPrice = spotPriceCount > 0 ? spotPriceSum / spotPriceCount : 0;
+        const totalCost = totalEnergy * (contract ? this.calculateEffectivePrice(contract, avgSpotPrice) : avgSpotPrice);
+
+        entry.totalEnergy = Math.round(totalEnergy * 1000) / 1000;
+        entry.totalCost = Math.round(totalCost * 100) / 100;
+        entry.spotPrice = Math.round(avgSpotPrice * 10000) / 10000;
+
+        result.push(entry);
+      }
+      return result;
+    } catch (error) {
+      logger.error('Error getting timeseries data:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get daily cost breakdown for a period
    * @param {Date} startDate - Start date
    * @param {Date} endDate - End date

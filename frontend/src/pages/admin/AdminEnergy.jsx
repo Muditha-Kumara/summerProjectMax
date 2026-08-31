@@ -2,196 +2,346 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from 'recharts';
 
-const AdminEnergy = () => {
-  const { t } = useTranslation();
-  const [timeRange, setTimeRange] = useState('day');
-  const [costData, setCostData] = useState(null);
-  const [loading, setLoading] = useState(true);
+// ── Constants ──
 
-  useEffect(() => {
-    fetchCostData();
-  }, [timeRange]);
+const TIMERANGE_OPTIONS = [
+  { key: 'day', labelKey: 'energy.today' },
+  { key: 'week', labelKey: 'energy.week' },
+  { key: 'month', labelKey: 'energy.month' },
+  { key: 'year', labelKey: 'energy.year' },
+];
 
-  const fetchCostData = async () => {
-    try {
-      setLoading(true);
-      const now = new Date();
-      let startDate, endDate;
+const ROOM_COLORS = [
+  '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
+  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+];
 
-      if (timeRange === 'day') {
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      } else if (timeRange === 'week') {
-        const weekAgo = new Date(now);
-        weekAgo.setDate(now.getDate() - 7);
-        startDate = weekAgo;
-        endDate = now;
-      } else if (timeRange === 'month') {
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      } else {
-        startDate = new Date(now.getFullYear(), 0, 1);
-        endDate = new Date(now.getFullYear() + 1, 0, 1);
-      }
+const ROOM_DASHES = [
+  '', '5 5', '3 3', '10 5',
+  '2 2', '8 4', '1 3', '6 6',
+];
 
-      const response = await api.get('/costs/summary', {
-        params: {
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
-        },
-      });
+// ── Custom Tooltip ──
 
-      if (response.data.success) {
-        setCostData(response.data.data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch cost data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost }) => {
+  if (!active || !payload || !payload.length) return null;
 
-  const formatEnergy = (value) => {
-    if (value === null || value === undefined) return '--';
-    return `${value.toFixed(2)} kWh`;
-  };
+  const roomItems = [];
+  let totalEnergyItem = null;
+  let totalCostItem = null;
+  let spotPriceItem = null;
 
-  const formatPrice = (value) => {
-    if (value === null || value === undefined) return '--';
-    return `${(value * 100).toFixed(2)} c/kWh`;
-  };
-
-  const formatCost = (value) => {
-    if (value === null || value === undefined) return '--';
-    return `${value.toFixed(2)} €`;
-  };
+  payload.forEach((p) => {
+    if (p.dataKey === 'totalEnergy') totalEnergyItem = p;
+    else if (p.dataKey === 'totalCost') totalCostItem = p;
+    else if (p.dataKey === 'spotPrice') spotPriceItem = p;
+    else if (p.dataKey.startsWith('room_')) roomItems.push(p);
+  });
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">{t('energy.title')}</h1>
-      
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setTimeRange('day')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              timeRange === 'day'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {t('energy.today')}
-          </button>
-          <button
-            onClick={() => setTimeRange('week')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              timeRange === 'week'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {t('energy.week')}
-          </button>
-          <button
-            onClick={() => setTimeRange('month')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              timeRange === 'month'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {t('energy.month')}
-          </button>
-          <button
-            onClick={() => setTimeRange('year')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-              timeRange === 'year'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {t('energy.year')}
-          </button>
+    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs min-w-[260px]">
+      <div className="font-semibold text-gray-700 mb-2 border-b pb-1">{label}</div>
+      {roomItems.length > 0 && (
+        <div className="mb-2">
+          <div className="text-gray-400 mb-1">{t('energy.consumption')}</div>
+          {roomItems.map((item) => (
+            <div key={item.dataKey} className="flex items-center justify-between py-0.5">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                {item.name}
+              </span>
+              <span className="font-medium text-gray-700">{fmtEnergy(item.value)}</span>
+            </div>
+          ))}
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="border-2 border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">{t('energy.consumption')}</h4>
-            <p className="text-3xl font-bold text-primary-600">
-              {loading ? '--' : formatEnergy(costData?.totalEnergy || 0)}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              {timeRange === 'day' ? t('energy.today') : timeRange === 'week' ? t('energy.week') : timeRange === 'month' ? t('energy.month') : t('energy.year')}
-            </p>
+      )}
+      <div className="border-t pt-2 space-y-1">
+        {totalEnergyItem && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">{t('energy.totalConsumption')}</span>
+            <span className="font-semibold text-blue-600">{fmtEnergy(totalEnergyItem.value)}</span>
           </div>
-
-          <div className="border-2 border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">{t('energy.avgPrice')}</h4>
-            <p className="text-3xl font-bold text-green-600">
-              {loading ? '--' : formatPrice(costData?.avgPricePerKwh || 0)}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              {timeRange === 'day' ? t('energy.today') : timeRange === 'week' ? t('energy.week') : timeRange === 'month' ? t('energy.month') : t('energy.year')}
-            </p>
+        )}
+        {spotPriceItem && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">{t('energy.spotPrice')}</span>
+            <span className="font-semibold text-amber-600">{fmtPrice(spotPriceItem.value)}</span>
           </div>
-
-          <div className="border-2 border-gray-200 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">{t('energy.cost')}</h4>
-            <p className="text-3xl font-bold text-orange-600">
-              {loading ? '--' : formatCost(costData?.totalCost || 0)}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              {timeRange === 'day' ? t('energy.today') : timeRange === 'week' ? t('energy.week') : timeRange === 'month' ? t('energy.month') : t('energy.year')}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('energy.byDevice')}</h3>
-        {loading ? (
-          <p className="text-gray-500">Loading...</p>
-        ) : !costData?.roomBreakdown?.length ? (
-          <p className="text-gray-500">No energy data available for this period.</p>
-        ) : (
-          <div className="space-y-4">
-            {costData.roomBreakdown.map((room) => (
-              <div key={room.roomId} className="border-b border-gray-200 pb-4 last:border-0">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{room.roomName}</h4>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatEnergy(room.totalEnergy)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {formatCost(room.totalCost)}
-                    </p>
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-primary-600 h-2 rounded-full"
-                    style={{
-                      width: `${Math.min(100, (room.totalEnergy / (costData.totalEnergy || 1)) * 100)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+        )}
+        {totalCostItem && (
+          <div className="flex justify-between">
+            <span className="text-gray-500">{t('energy.cost')}</span>
+            <span className="font-semibold text-red-600">{fmtCost(totalCostItem.value)}</span>
           </div>
         )}
       </div>
     </div>
   );
 };
+
+// ── Main Component ──
+
+const AdminEnergy = () => {
+  const { t } = useTranslation();
+  const [timeRange, setTimeRange] = useState('day');
+  const [summary, setSummary] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const [points, setPoints] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAllData();
+  }, [timeRange]);
+
+  // ── Date helpers ──
+
+  const getDateRange = () => {
+    const now = new Date();
+    if (timeRange === 'day') {
+      return {
+        startDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+        endDate: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
+      };
+    }
+    if (timeRange === 'week') {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 7);
+      return { startDate: start, endDate: now };
+    }
+    if (timeRange === 'month') {
+      return {
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+      };
+    }
+    return {
+      startDate: new Date(now.getFullYear(), 0, 1),
+      endDate: new Date(now.getFullYear() + 1, 0, 1),
+    };
+  };
+
+  const toDateStr = (d) => d.toISOString().split('T')[0];
+
+  // ── Fetch ──
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const { startDate, endDate } = getDateRange();
+      const params = { startDate: toDateStr(startDate), endDate: toDateStr(endDate) };
+
+      const [summaryRes, tsRes] = await Promise.all([
+        api.get('/costs/summary', { params }),
+        api.get('/costs/timeseries', { params }),
+      ]);
+
+      if (summaryRes.data.success) setSummary(summaryRes.data.data);
+      if (tsRes.data.success) {
+        setRooms(tsRes.data.data.rooms || []);
+        setPoints(tsRes.data.data.points || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch energy data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Formatters ──
+
+  const fmtEnergy = (v) => (v != null ? `${Number(v).toFixed(2)} kWh` : '--');
+  const fmtPrice = (v) => (v != null ? `${(v * 100).toFixed(2)} c/kWh` : '--');
+  const fmtCost = (v) => (v != null ? `${Number(v).toFixed(2)} €` : '--');
+
+  // ── Render ──
+
+  const hasData = points.length > 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header + time-range pills */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-3xl font-bold text-gray-800">{t('energy.title')}</h1>
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          {TIMERANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setTimeRange(opt.key)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                timeRange === opt.key
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t(opt.labelKey)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard icon="⚡" label={t('energy.consumption')} value={fmtEnergy(summary?.totalEnergy)} loading={loading} color="blue" />
+        <StatCard icon="📊" label={t('energy.avgPrice')} value={fmtPrice(summary?.avgPricePerKwh)} loading={loading} color="green" />
+        <StatCard icon="💰" label={t('energy.cost')} value={fmtCost(summary?.totalCost)} loading={loading} color="orange" />
+      </div>
+
+      {/* Main chart: ALL lines in ONE LineChart */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('energy.timeseries')}</h3>
+        {loading ? (
+          <ChartSkeleton />
+        ) : !hasData ? (
+          <EmptyState message={t('energy.noData')} />
+        ) : (
+          <ResponsiveContainer width="100%" height={480}>
+            <LineChart data={points} margin={{ top: 20, right: 120, left: 80, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="label" 
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                stroke="#d1d5db"
+                label={{ value: 'Time', position: 'insideBottom', offset: -10, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+              />
+              {/* Left Y-axis: kWh for per-room energy lines */}
+              <YAxis 
+                yAxisId="energy" 
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                stroke="#d1d5db"
+                label={{ value: 'Room Energy (kWh)', angle: -90, position: 'insideLeft', offset: -60, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+              />
+              {/* Second left Y-axis: kWh for total consumption */}
+              <YAxis 
+                yAxisId="totalEnergy" 
+                orientation="left" 
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                stroke="#d1d5db"
+                label={{ value: 'Total Energy (kWh)', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+              />
+              {/* Right Y-axis: € for total cost */}
+              <YAxis 
+                yAxisId="totalCost" 
+                orientation="right" 
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                stroke="#d1d5db"
+                label={{ value: 'Cost (€)', angle: 90, position: 'insideRight', offset: 10, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+              />
+              {/* Far right Y-axis: c/kWh for spot price */}
+              <YAxis 
+                yAxisId="spotPrice" 
+                orientation="right" 
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                stroke="#d1d5db"
+                label={{ value: 'Price (c/kWh)', angle: 90, position: 'insideRight', offset: 60, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+              />
+              <Tooltip content={<CustomTooltipWrapper t={t} fmtEnergy={fmtEnergy} fmtPrice={fmtPrice} fmtCost={fmtCost} />} />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+
+              {/* Per-room energy lines */}
+              {rooms.map((room, i) => (
+                <Line
+                  key={room.id}
+                  yAxisId="energy"
+                  type="monotone"
+                  dataKey={`room_${room.id}`}
+                  name={room.name}
+                  stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
+                  strokeDasharray={ROOM_DASHES[i % ROOM_DASHES.length]}
+                  strokeWidth={1.5}
+                  dot={false}
+                  activeDot={{ r: 3 }}
+                />
+              ))}
+
+              {/* Total consumption – thick solid, separate axis */}
+              <Line
+                yAxisId="totalEnergy"
+                type="monotone"
+                dataKey="totalEnergy"
+                name={t('energy.totalConsumption')}
+                stroke="#1e3a5f"
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+
+              {/* Total cost – solid red, separate axis */}
+              <Line
+                yAxisId="totalCost"
+                type="monotone"
+                dataKey="totalCost"
+                name={t('energy.cost')}
+                stroke="#dc2626"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+
+              {/* Spot price – dashed amber, separate axis */}
+              <Line
+                yAxisId="spotPrice"
+                type="stepAfter"
+                dataKey="spotPrice"
+                name={t('energy.spotPrice')}
+                stroke="#f59e0b"
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Wrapper to pass props to custom tooltip
+const CustomTooltipWrapper = (props) => (
+  <CustomTooltip {...props} />
+);
+
+// ── Sub-components ──
+
+const StatCard = ({ icon, label, value, loading, color }) => {
+  const borderMap = { blue: 'border-blue-300', green: 'border-green-300', orange: 'border-orange-300' };
+  const textMap = { blue: 'text-blue-600', green: 'text-green-600', orange: 'text-orange-600' };
+  return (
+    <div className={`bg-white rounded-xl shadow-md p-5 border-l-4 ${borderMap[color] || 'border-gray-200'}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xl">{icon}</span>
+        <span className="text-sm font-medium text-gray-500">{label}</span>
+      </div>
+      <p className={`text-2xl font-bold ${textMap[color] || 'text-gray-800'}`}>
+        {loading ? '...' : value}
+      </p>
+    </div>
+  );
+};
+
+const ChartSkeleton = () => (
+  <div className="flex items-center justify-center h-[400px] bg-gray-50 rounded-lg">
+    <div className="animate-pulse flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-4 border-gray-300 border-t-primary-500 rounded-full animate-spin" />
+      <span className="text-sm text-gray-400">Loading chart data...</span>
+    </div>
+  </div>
+);
+
+const EmptyState = ({ message }) => (
+  <div className="flex items-center justify-center h-[400px] bg-gray-50 rounded-lg">
+    <p className="text-gray-400 text-sm">{message}</p>
+  </div>
+);
 
 export default AdminEnergy;

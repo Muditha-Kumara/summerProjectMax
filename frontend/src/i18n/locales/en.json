@@ -104,6 +104,24 @@
     "leaveActivated": "Temporary leave activated",
     "error": "Something went wrong"
   },
+  "energy": {
+    "title": "Energy Consumption",
+    "today": "Today",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "consumption": "Consumption",
+    "totalConsumption": "Total Consumption",
+    "cost": "Cost",
+    "avgPrice": "Avg Price",
+    "byDevice": "By Room",
+    "timeseries": "Energy Over Time",
+    "spotPrice": "Spot Price",
+    "usageBreakdown": "Usage Breakdown",
+    "roomEnergy": "Energy by Room",
+    "roomCost": "Cost by Room",
+    "noData": "No energy data for this period."
+  },
   "language": {
     "fi": "Suomi",
     "sv": "Svenska",

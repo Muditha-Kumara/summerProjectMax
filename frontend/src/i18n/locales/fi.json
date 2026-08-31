@@ -104,6 +104,24 @@
     "leaveActivated": "Väliaikainen poissaolo aktivoitu",
     "error": "Jotain meni pieleen"
   },
+  "energy": {
+    "title": "Energiankulutus",
+    "today": "Tänään",
+    "week": "Viikko",
+    "month": "Kuukausi",
+    "year": "Vuosi",
+    "consumption": "Kulutus",
+    "totalConsumption": "Kokonaiskulutus",
+    "cost": "Kustannukset",
+    "avgPrice": "Keskihinta",
+    "byDevice": "Huoneittain",
+    "timeseries": "Energiankulutus aikajanalla",
+    "spotPrice": "Spot-hinta",
+    "usageBreakdown": "Kulutusjakauma",
+    "roomEnergy": "Huonekohtainen energia",
+    "roomCost": "Huonekohtaiset kustannukset",
+    "noData": "Ei energiatietoja tältä ajanjaksolta."
+  },
   "language": {
     "fi": "Suomi",
     "sv": "Svenska",

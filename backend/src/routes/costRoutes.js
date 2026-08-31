@@ -75,6 +75,47 @@ router.get('/room/:roomId', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/costs/timeseries
+ * Get time-series cost/energy/price data for charting
+ * Query params: startDate, endDate (ISO format)
+ */
+router.get('/timeseries', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'startDate and endDate are required (ISO format)'
+      });
+    }
+
+    const Room = (await import('../models/Room.js')).default;
+    const rooms = await Room.findAll();
+    const roomMeta = rooms.map((r) => ({ id: r.id, name: r.name }));
+
+    const timeseries = await costService.getTimeseries(
+      new Date(startDate),
+      new Date(endDate)
+    );
+
+    res.json({
+      success: true,
+      data: {
+        rooms: roomMeta,
+        points: timeseries,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get timeseries data',
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/v1/costs/daily
  * Get daily cost breakdown
  * Query params: startDate, endDate (ISO format)
