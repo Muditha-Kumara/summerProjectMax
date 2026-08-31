@@ -7,6 +7,8 @@ const AdminRooms = () => {
   const [error, setError] = useState(null);
   const [togglingRooms, setTogglingRooms] = useState({});
   const [updatingThreshold, setUpdatingThreshold] = useState({});
+  const [editingTemp, setEditingTemp] = useState({});
+  const [updatingTemp, setUpdatingTemp] = useState({});
 
   useEffect(() => {
     fetchRooms();
@@ -66,6 +68,21 @@ const AdminRooms = () => {
       alert('Failed to update alert threshold. Please try again.');
     } finally {
       setUpdatingThreshold(prev => ({ ...prev, [roomId]: false }));
+    }
+  };
+
+  const handleSaveTargetTemp = async (roomId, newTemp) => {
+    setUpdatingTemp(prev => ({ ...prev, [roomId]: true }));
+    
+    try {
+      await roomService.updateTemperature(roomId, parseFloat(newTemp));
+      await fetchRooms();
+      setEditingTemp(prev => ({ ...prev, [roomId]: false }));
+    } catch (err) {
+      console.error('Failed to update target temperature:', err);
+      alert('Failed to update target temperature. Please try again.');
+    } finally {
+      setUpdatingTemp(prev => ({ ...prev, [roomId]: false }));
     }
   };
 
@@ -139,8 +156,56 @@ const AdminRooms = () => {
                 )}
                 {room.target_temp !== null && (
                   <div className="bg-gray-50 rounded p-2">
-                    <p className="text-xs text-gray-500">Target Temp</p>
-                    <p className="text-lg font-semibold text-gray-800">{room.target_temp}°C</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">Target Temp</p>
+                      {!editingTemp[room.id] && (
+                        <button
+                          onClick={() => setEditingTemp(prev => ({ ...prev, [room.id]: true }))}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                    {editingTemp[room.id] ? (
+                      <div className="flex items-center gap-1 mt-1">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="5"
+                          max="35"
+                          defaultValue={room.target_temp}
+                          className="w-24 px-2 py-1 text-sm border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveTargetTemp(room.id, e.target.value);
+                            } else if (e.key === 'Escape') {
+                              setEditingTemp(prev => ({ ...prev, [room.id]: false }));
+                            }
+                          }}
+                          disabled={updatingTemp[room.id]}
+                        />
+                        <button
+                          onClick={(e) => {
+                            const input = e.target.parentElement.querySelector('input');
+                            handleSaveTargetTemp(room.id, input.value);
+                          }}
+                          disabled={updatingTemp[room.id]}
+                          className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                        >
+                          {updatingTemp[room.id] ? '…' : '✓'}
+                        </button>
+                        <button
+                          onClick={() => setEditingTemp(prev => ({ ...prev, [room.id]: false }))}
+                          disabled={updatingTemp[room.id]}
+                          className="px-2 py-1 text-xs bg-gray-400 text-white rounded hover:bg-gray-500 disabled:opacity-50"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-lg font-semibold text-gray-800">{room.target_temp}°C</p>
+                    )}
                   </div>
                 )}
                 {room.humidity !== null && (

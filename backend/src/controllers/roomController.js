@@ -21,7 +21,7 @@ class RoomController {
           
           try {
             const status = await ShellyService.getDeviceStatus(room.shelly_device_id);
-            const relayState = status.success && status.data?.relays?.[0]?.ison === true;
+            const relayState = status.success && status.data?.device_status?.relays?.[0]?.ison === true;
             
             // Extract temperature from device status
             let currentTemp = null;
