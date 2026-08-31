@@ -10,6 +10,9 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 
 // ── Constants ──
@@ -177,6 +180,21 @@ const AdminEnergy = () => {
   const fmtPrice = (v) => (v != null ? `${(v * 100).toFixed(2)} c/kWh` : '--');
   const fmtCost = (v) => (v != null ? `${Number(v).toFixed(2)} €` : '--');
 
+  // ── Pie chart data ──
+
+  const pieData = React.useMemo(() => {
+    if (!points.length || !rooms.length) return { energy: [], cost: [] };
+    const energy = [];
+    const cost = [];
+    rooms.forEach((room, i) => {
+      const totalEnergy = points.reduce((sum, p) => sum + (p[`room_${room.id}`] || 0), 0);
+      const totalCost = points.reduce((sum, p) => sum + (p[`roomCost_${room.id}`] || 0), 0);
+      energy.push({ name: room.name, value: Math.round(totalEnergy * 1000) / 1000, color: ROOM_COLORS[i % ROOM_COLORS.length] });
+      cost.push({ name: room.name, value: Math.round(totalCost * 100) / 100, color: ROOM_COLORS[i % ROOM_COLORS.length] });
+    });
+    return { energy, cost };
+  }, [points, rooms]);
+
   // ── Render ──
 
   const hasData = points.length > 0;
@@ -331,6 +349,58 @@ const AdminEnergy = () => {
           </ResponsiveContainer>
         )}
       </div>
+
+      {/* Pie charts: per-room energy and cost breakdown */}
+      {hasData && pieData.energy.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('energy.consumption')} {t('energy.byDevice')}</h3>
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={pieData.energy}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={110}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
+                >
+                  {pieData.energy.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => fmtEnergy(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('energy.cost')} {t('energy.byDevice')}</h3>
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={pieData.cost}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={110}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: '#9ca3af', strokeWidth: 1 }}
+                >
+                  {pieData.cost.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => fmtCost(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
