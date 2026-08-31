@@ -14,19 +14,25 @@ import {
 } from 'recharts';
 import api from '../services/api';
 
-/* ───────── Control Mode Badge ───────── */
-const MODE_STYLES = {
-  'spot-price': 'bg-green-100 text-green-700',
-  thermostat: 'bg-blue-100 text-blue-700',
-  clock: 'bg-gray-100 text-gray-600',
-  away: 'bg-yellow-100 text-yellow-700',
-};
+/* ───────── Device Status Badge ───────── */
+export function DeviceStatusBadge({ heatingOn, deviceOnline }) {
+  if (!deviceOnline) {
+    return (
+      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500">
+        offline
+      </span>
+    );
+  }
 
-export function ControlModeBadge({ mode }) {
-  const style = MODE_STYLES[mode?.toLowerCase()] || 'bg-gray-100 text-gray-500';
+  const isOn = heatingOn === true;
+  const style = isOn
+    ? 'bg-green-100 text-green-700'
+    : 'bg-red-100 text-red-700';
+  const label = isOn ? 'ON' : 'OFF';
+
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded ${style}`}>
-      {mode}
+      {label}
     </span>
   );
 }
@@ -45,7 +51,10 @@ export function RoomOverviewGrid({ rooms = [] }) {
         >
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-gray-900">{room.name}</h3>
-            <ControlModeBadge mode={room.control_mode || room.controlMode} />
+            <DeviceStatusBadge
+              heatingOn={room.heating_on}
+              deviceOnline={room.device_online}
+            />
           </div>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">

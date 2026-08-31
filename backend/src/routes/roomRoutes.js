@@ -18,5 +18,7 @@ router.post('/', authenticateAdmin, roomController.create);
 router.put('/:id', authenticateAdmin, roomController.update);
 router.put('/:id/temperature', optionalAuth, roomController.updateTemperature);
 router.put('/:id/control-mode', authenticateAdmin, roomController.updateControlMode);
+router.post('/:id/relay', authenticateAdmin, roomController.toggleRelay);
+router.put('/:id/alert-threshold', authenticateAdmin, roomController.updateAlertThreshold);
 
 export default router;

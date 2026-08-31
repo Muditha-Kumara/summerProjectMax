@@ -39,6 +39,16 @@ export const roomService = {
   update: async (id, roomData) => {
     const response = await api.put(`/rooms/${id}`, roomData);
     return response.data;
+  },
+
+  toggleRelay: async (id, state) => {
+    const response = await api.post(`/rooms/${id}/relay`, { state });
+    return response.data;
+  },
+
+  updateAlertThreshold: async (id, alertThreshold) => {
+    const response = await api.put(`/rooms/${id}/alert-threshold`, { alertThreshold });
+    return response.data;
   }
 };
 

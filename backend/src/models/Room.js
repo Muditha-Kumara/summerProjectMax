@@ -1,12 +1,12 @@
 import db from '../config/database.js';
 
 class Room {
-  static async create({ name, nameFi, nameSv, nameEn, shellyDeviceId, shellyDeviceType, isCritical = false, criticalMinTemp = null }) {
+  static async create({ name, nameFi, nameSv, nameEn, shellyDeviceId, shellyDeviceType, isCritical = false, criticalMinTemp = null, alertThreshold = null }) {
     const result = await db.query(
-      `INSERT INTO rooms (name, name_fi, name_sv, name_en, shelly_device_id, shelly_device_type, is_critical, critical_min_temp)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO rooms (name, name_fi, name_sv, name_en, shelly_device_id, shelly_device_type, is_critical, critical_min_temp, alert_threshold)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [name, nameFi, nameSv, nameEn, shellyDeviceId, shellyDeviceType, isCritical, criticalMinTemp]
+      [name, nameFi, nameSv, nameEn, shellyDeviceId, shellyDeviceType, isCritical, criticalMinTemp, alertThreshold]
     );
     return result.rows[0];
   }
@@ -65,6 +65,17 @@ class Room {
        WHERE id = $2
        RETURNING *`,
       [controlMode, id]
+    );
+    return result.rows[0];
+  }
+
+  static async updateAlertThreshold(id, alertThreshold) {
+    const result = await db.query(
+      `UPDATE rooms 
+       SET alert_threshold = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING *`,
+      [alertThreshold, id]
     );
     return result.rows[0];
   }

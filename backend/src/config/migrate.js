@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   is_critical BOOLEAN DEFAULT FALSE,
   critical_min_temp DECIMAL(5,2),
   control_mode VARCHAR(50) DEFAULT 'thermostat',
+  alert_threshold DECIMAL(5,2),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

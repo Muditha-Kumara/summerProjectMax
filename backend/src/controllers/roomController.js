@@ -194,6 +194,91 @@ class RoomController {
     }
   }
 
+  // Toggle relay on/off for a room's Shelly device
+  async toggleRelay(req, res) {
+    try {
+      const { id } = req.params;
+      const { state } = req.body; // 'on' or 'off'
+
+      if (!['on', 'off'].includes(state)) {
+        return res.status(400).json({
+          success: false,
+          message: 'State must be "on" or "off"'
+        });
+      }
+
+      const room = await Room.findById(id);
+      if (!room) {
+        return res.status(404).json({
+          success: false,
+          message: 'Room not found'
+        });
+      }
+
+      if (!room.shelly_device_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Room has no Shelly device assigned'
+        });
+      }
+
+      const result = await ShellyService.setRelayState(room.shelly_device_id, 0, state);
+
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          message: result.message || 'Failed to toggle relay'
+        });
+      }
+
+      logger.info(`Room ${room.name} relay set to ${state}`);
+
+      return res.json({
+        success: true,
+        message: `Relay turned ${state}`,
+        heating_on: state === 'on'
+      });
+    } catch (error) {
+      logger.error('Toggle relay error', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to toggle relay'
+      });
+    }
+  }
+
+  // Update alert threshold for a room
+  async updateAlertThreshold(req, res) {
+    try {
+      const { id } = req.params;
+      const { alertThreshold } = req.body;
+
+      const room = await Room.findById(id);
+      if (!room) {
+        return res.status(404).json({
+          success: false,
+          message: 'Room not found'
+        });
+      }
+
+      const updated = await Room.updateAlertThreshold(id, alertThreshold);
+
+      logger.info(`Room ${room.name} alert threshold updated to ${alertThreshold}`);
+
+      return res.json({
+        success: true,
+        message: 'Alert threshold updated',
+        room: updated
+      });
+    } catch (error) {
+      logger.error('Update alert threshold error', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update alert threshold'
+      });
+    }
+  }
+
   // Get room historical data
   async getHistoricalData(req, res) {
     try {
