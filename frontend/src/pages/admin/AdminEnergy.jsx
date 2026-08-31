@@ -114,9 +114,15 @@ const AdminEnergy = () => {
       };
     }
     if (timeRange === 'week') {
-      const start = new Date(now);
-      start.setDate(now.getDate() - 7);
-      return { startDate: start, endDate: now };
+      // Monday to Sunday of current week
+      const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+      const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday-based
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - mondayOffset);
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 7);
+      return { startDate: monday, endDate: sunday };
     }
     if (timeRange === 'month') {
       return {
@@ -205,20 +211,19 @@ const AdminEnergy = () => {
           <EmptyState message={t('energy.noData')} />
         ) : (
           <ResponsiveContainer width="100%" height={480}>
-            <LineChart data={points} margin={{ top: 20, right: 120, left: 80, bottom: 20 }}>
+            <LineChart data={points} margin={{ top: 20, right: 100, left: 60, bottom: 30 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis 
                 dataKey="label" 
                 tick={{ fontSize: 11, fill: '#6b7280' }}
                 stroke="#d1d5db"
-                label={{ value: 'Time', position: 'insideBottom', offset: -10, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
               />
               {/* Left Y-axis: kWh for per-room energy lines */}
               <YAxis 
                 yAxisId="energy" 
                 tick={{ fontSize: 11, fill: '#6b7280' }}
                 stroke="#d1d5db"
-                label={{ value: 'Room Energy (kWh)', angle: -90, position: 'insideLeft', offset: -60, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+                label={{ value: 'kWh', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 11, fill: '#6b7280' } }}
               />
               {/* Second left Y-axis: kWh for total consumption */}
               <YAxis 
@@ -226,7 +231,7 @@ const AdminEnergy = () => {
                 orientation="left" 
                 tick={{ fontSize: 11, fill: '#6b7280' }}
                 stroke="#d1d5db"
-                label={{ value: 'Total Energy (kWh)', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+                label={{ value: 'Total kWh', angle: -90, position: 'insideLeft', offset: 45, style: { fontSize: 11, fill: '#6b7280' } }}
               />
               {/* Right Y-axis: € for total cost */}
               <YAxis 
@@ -234,7 +239,7 @@ const AdminEnergy = () => {
                 orientation="right" 
                 tick={{ fontSize: 11, fill: '#6b7280' }}
                 stroke="#d1d5db"
-                label={{ value: 'Cost (€)', angle: 90, position: 'insideRight', offset: 10, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+                label={{ value: '€', angle: 90, position: 'insideRight', offset: 10, style: { fontSize: 11, fill: '#6b7280' } }}
               />
               {/* Far right Y-axis: c/kWh for spot price */}
               <YAxis 
@@ -242,7 +247,7 @@ const AdminEnergy = () => {
                 orientation="right" 
                 tick={{ fontSize: 11, fill: '#6b7280' }}
                 stroke="#d1d5db"
-                label={{ value: 'Price (c/kWh)', angle: 90, position: 'insideRight', offset: 60, style: { fontSize: 12, fill: '#374151', fontWeight: 500 } }}
+                label={{ value: 'c/kWh', angle: 90, position: 'insideRight', offset: 45, style: { fontSize: 11, fill: '#6b7280' } }}
               />
               <Tooltip content={<CustomTooltipWrapper t={t} fmtEnergy={fmtEnergy} fmtPrice={fmtPrice} fmtCost={fmtCost} />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />

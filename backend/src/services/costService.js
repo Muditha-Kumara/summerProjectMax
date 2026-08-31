@@ -179,8 +179,8 @@ class CostService {
           return slots;
         };
         slotLabel = (d) => `${String(d.getHours()).padStart(2, '0')}:00`;
-      } else if (rangeDays <= 31) {
-        // Week/Month: daily slots
+      } else if (rangeDays <= 7) {
+        // Week: daily slots with day names (Mon–Sun)
         generateSlots = () => {
           const slots = [];
           const cur = new Date(startDate);
@@ -191,10 +191,21 @@ class CostService {
           return slots;
         };
         slotLabel = (d) => {
-          const m = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          return `${m}-${day}`;
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          return days[d.getDay()];
         };
+      } else if (rangeDays <= 31) {
+        // Month: daily slots with day numbers (1–31)
+        generateSlots = () => {
+          const slots = [];
+          const cur = new Date(startDate);
+          while (cur < endDate) {
+            slots.push(new Date(cur));
+            cur.setDate(cur.getDate() + 1);
+          }
+          return slots;
+        };
+        slotLabel = (d) => String(d.getDate());
       } else {
         // Year: monthly slots
         generateSlots = () => {
