@@ -14,26 +14,39 @@ const AdminRooms = () => {
 
   const fetchRooms = async () => {
     try {
-      setLoading(true);
+      console.log('Fetching rooms...');
       const data = await roomService.getAll();
+      console.log('Rooms fetched:', data);
       setRooms(data.rooms || []);
       setError(null);
     } catch (err) {
+      console.error('Failed to fetch rooms:', err);
       setError('Failed to fetch rooms');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleToggleRelay = async (roomId, currentState) => {
+    console.log('Toggle button clicked:', { roomId, currentState });
     const newState = currentState ? 'off' : 'on';
+    console.log('New state:', newState);
     setTogglingRooms(prev => ({ ...prev, [roomId]: true }));
     
     try {
-      await roomService.toggleRelay(roomId, newState);
-      // Refresh rooms to get updated state
-      await fetchRooms();
+      console.log('Calling toggleRelay API...');
+      const result = await roomService.toggleRelay(roomId, newState);
+      console.log('Toggle result:', result);
+      
+      // Update the room state directly instead of refetching
+      setRooms(prevRooms => 
+        prevRooms.map(room => 
+          room.id === roomId 
+            ? { ...room, heating_on: result.heating_on }
+            : room
+        )
+      );
+      console.log('Rooms state updated');
     } catch (err) {
       console.error('Failed to toggle relay:', err);
       alert('Failed to toggle device. Please try again.');
@@ -138,8 +151,18 @@ const AdminRooms = () => {
                 )}
                 <div className="bg-gray-50 rounded p-2">
                   <p className="text-xs text-gray-500">Status</p>
-                  <p className={`text-sm font-semibold ${room.device_online ? 'text-green-600' : 'text-red-600'}`}>
-                    {room.device_online ? 'Online' : 'Offline'}
+                  <p className={`text-sm font-semibold ${
+                    !room.device_online 
+                      ? 'text-red-600' 
+                      : room.heating_on 
+                        ? 'text-orange-600' 
+                        : 'text-blue-600'
+                  }`}>
+                    {!room.device_online 
+                      ? 'Offline' 
+                      : room.heating_on 
+                        ? ' Heating' 
+                        : '❄️ Off'}
                   </p>
                 </div>
               </div>
