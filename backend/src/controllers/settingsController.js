@@ -305,15 +305,15 @@ class SettingsController {
       res.json({
         success: result.success,
         message: result.success 
-          ? `Nord Pool API working! Retrieved ${result.data?.length || 0} price entries`
-          : `Nord Pool API failed: ${result.message}`,
-        data: result.success ? { count: result.data?.length || 0 } : null
+          ? `Price API working! Retrieved ${result.prices?.length || 0} price entries`
+          : `Price API failed: ${result.message}`,
+        data: result.success ? { count: result.prices?.length || 0 } : null
       });
     } catch (error) {
-      logger.error('Nord Pool test failed', error);
+      logger.error('Price API test failed', error);
       res.status(500).json({ 
         success: false, 
-        message: `Nord Pool test failed: ${error.message}` 
+        message: `Price API test failed: ${error.message}` 
       });
     }
   }

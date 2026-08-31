@@ -8,6 +8,8 @@ class NordPoolService {
     this.apiUrl = config.nordPool.apiUrl;
     this.area = config.nordPool.area;
     this.useMockPrices = config.nordPool.useMockPrices;
+    this.spotHintaApiUrl = config.spotHinta.apiUrl;
+    this.priceSource = config.priceSource;
   }
 
   /**
@@ -45,12 +47,81 @@ class NordPoolService {
     return prices;
   }
 
+  /**
+   * Fetch prices from spot-hinta.fi (free, no API key required)
+   * Returns 15-minute interval prices in EUR/kWh
+   */
+  async fetchSpotHintaPrices() {
+    try {
+      logger.info('Fetching prices from spot-hinta.fi');
+      
+      const response = await axios.get(`${this.spotHintaApiUrl}/TodayAndDayForward`, {
+        timeout: 10000
+      });
+
+      if (!response.data || !Array.isArray(response.data)) {
+        return { success: false, message: 'Invalid response from spot-hinta.fi' };
+      }
+
+      // Convert 15-min intervals to hourly averages
+      const hourlyPrices = this.aggregateSpotHintaData(response.data);
+      
+      logger.info(`Fetched ${response.data.length} intervals, aggregated to ${hourlyPrices.length} hours`);
+      return { success: true, prices: hourlyPrices };
+    } catch (error) {
+      logger.error('Spot-hinta.fi API error', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Aggregate 15-minute interval data to hourly averages
+   */
+  aggregateSpotHintaData(data) {
+    const hourlyMap = new Map();
+
+    data.forEach(item => {
+      const dateTime = new Date(item.DateTime);
+      const hourKey = new Date(dateTime);
+      hourKey.setMinutes(0, 0, 0);
+      const key = hourKey.toISOString();
+
+      if (!hourlyMap.has(key)) {
+        hourlyMap.set(key, {
+          timestamp: hourKey,
+          prices: [],
+          area: this.area
+        });
+      }
+
+      // Use PriceWithTax for consumer-facing prices (EUR/kWh)
+      hourlyMap.get(key).prices.push(item.PriceWithTax);
+    });
+
+    // Calculate hourly averages
+    return Array.from(hourlyMap.values()).map(entry => ({
+      timestamp: entry.timestamp,
+      price: entry.prices.reduce((a, b) => a + b, 0) / entry.prices.length,
+      area: entry.area
+    }));
+  }
+
   async fetchSpotPrices(hours = 24) {
     try {
       let prices;
 
-      if (this.useMockPrices) {
-        logger.info('Using MOCK spot prices (USE_MOCK_PRICES=true)');
+      // Determine which price source to use
+      if (this.priceSource === 'spothinta') {
+        logger.info('Using spot-hinta.fi as price source');
+        const result = await this.fetchSpotHintaPrices();
+        if (result.success) {
+          prices = result.prices;
+        } else {
+          logger.warn('Spot-hinta.fi failed, falling back to mock prices');
+          prices = this.generateMockPrices(hours);
+        }
+      } else if (this.useMockPrices || this.priceSource === 'mock') {
+        logger.info('Using MOCK spot prices');
         prices = this.generateMockPrices(hours);
       } else {
         // Nord Pool API endpoint for day-ahead prices
@@ -74,7 +145,7 @@ class NordPoolService {
       // Store in database
       if (prices && prices.length > 0) {
         await SpotPrice.bulkCreate(prices);
-        logger.info(`Stored ${prices.length} spot prices`);
+        logger.info(`Stored ${prices.length} spot prices from ${this.priceSource}`);
       }
 
       return {
@@ -82,7 +153,7 @@ class NordPoolService {
         prices: prices || []
       };
     } catch (error) {
-      logger.error('Nord Pool API error', error);
+      logger.error('Price fetch error', error);
       return {
         success: false,
         message: error.message

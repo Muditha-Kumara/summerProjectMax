@@ -14,9 +14,50 @@ class RoomController {
       const weather = await WeatherService.getCurrentWeather();
       const outdoorTemp = weather.success ? weather.data.temperature : null;
 
+      // Enhance rooms with heating status, temperature, and humidity from Shelly devices
+      const enhancedRooms = await Promise.all(
+        rooms.map(async (room) => {
+          if (!room.shelly_device_id) return room;
+          
+          try {
+            const status = await ShellyService.getDeviceStatus(room.shelly_device_id);
+            const relayState = status.success && status.data?.relays?.[0]?.ison === true;
+            
+            // Extract temperature from device status
+            let currentTemp = null;
+            if (status.success && status.data?.device_status?.ext_temperature?.['0']?.tC !== undefined) {
+              currentTemp = status.data.device_status.ext_temperature['0'].tC;
+            }
+            
+            // Extract humidity from device status
+            let humidity = null;
+            if (status.success && status.data?.device_status?.ext_humidity?.['0']?.hum !== undefined) {
+              humidity = status.data.device_status.ext_humidity['0'].hum;
+            }
+            
+            return {
+              ...room,
+              current_temp: currentTemp,
+              humidity: humidity,
+              heating_on: relayState,
+              device_online: status.success
+            };
+          } catch (err) {
+            logger.warn(`Failed to get status for room ${room.id}:`, err.message);
+            return {
+              ...room,
+              current_temp: null,
+              humidity: null,
+              heating_on: false,
+              device_online: false
+            };
+          }
+        })
+      );
+
       return res.json({
         success: true,
-        rooms,
+        rooms: enhancedRooms,
         outdoorTemp,
         weather: weather.success ? weather.data : null
       });

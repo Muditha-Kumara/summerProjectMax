@@ -146,6 +146,42 @@ CREATE TABLE IF NOT EXISTS away_schedules (
 );
 
 CREATE INDEX IF NOT EXISTS idx_away_schedules_status_end_time ON away_schedules(status, end_time);
+
+-- Electricity contracts
+CREATE TABLE IF NOT EXISTS electricity_contracts (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(20) NOT NULL CHECK (type IN ('fixed', 'spot', 'tiered')),
+  fixed_price DECIMAL(10, 4),
+  spot_margin DECIMAL(10, 4) DEFAULT 0,
+  tiered_pricing JSONB,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_electricity_contracts_active ON electricity_contracts(is_active);
+CREATE INDEX IF NOT EXISTS idx_electricity_contracts_dates ON electricity_contracts(start_date, end_date);
+
+-- Alerts table
+CREATE TABLE IF NOT EXISTS alerts (
+  id SERIAL PRIMARY KEY,
+  type VARCHAR(50) NOT NULL,
+  severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+  message TEXT NOT NULL,
+  room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+  metadata JSONB DEFAULT '{}',
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'resolved', 'acknowledged')),
+  resolved_at TIMESTAMP,
+  resolved_by VARCHAR(50),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
+CREATE INDEX IF NOT EXISTS idx_alerts_room_id ON alerts(room_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_severity ON alerts(severity);
 `;
 
 export const runMigrations = async () => {

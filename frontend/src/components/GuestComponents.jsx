@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
 export const RoomCard = ({ room }) => {
-  const [targetTemp, setTargetTemp] = useState(room.targetTemp || 21);
+  const currentTemp = room.current_temp ?? room.currentTemp;
+  const targetTempState = useState(room.target_temp ?? room.targetTemp ?? 21);
+  const [targetTemp, setTargetTemp] = targetTempState;
 
   const handleTempChange = async (e) => {
     const newTemp = parseInt(e.target.value);
@@ -24,7 +26,9 @@ export const RoomCard = ({ room }) => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <p className="text-xl text-gray-600">Current</p>
-          <p className="text-6xl font-bold text-gray-900">{room.currentTemp}°</p>
+          <p className="text-6xl font-bold text-gray-900">
+            {currentTemp !== null && currentTemp !== undefined ? `${currentTemp.toFixed(1)}°` : '--°'}
+          </p>
         </div>
         <div className="text-right">
           <p className="text-xl text-gray-600">Target</p>

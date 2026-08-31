@@ -1,15 +1,28 @@
 import axios from 'axios';
 import config from '../config/index.js';
 import logger from '../utils/logger.js';
+import virtualShellyService from './virtualShellyService.js';
 
 class ShellyService {
   constructor() {
     this.apiUrl = config.shelly.apiUrl;
     this.authKey = config.shelly.authKey;
     this.serverId = config.shelly.serverId;
+    this.useVirtual = config.shelly.useVirtual;
+    
+    if (this.useVirtual) {
+      logger.info('Shelly Service: Using VIRTUAL mode (no real hardware needed)');
+    } else {
+      logger.info('Shelly Service: Using REAL Shelly Cloud API');
+    }
   }
 
   async getDeviceStatus(deviceId) {
+    // Use virtual service if enabled
+    if (this.useVirtual) {
+      return virtualShellyService.getDeviceStatus(deviceId);
+    }
+
     try {
       const response = await axios.post(
         `${this.apiUrl}/device/status`,
@@ -41,6 +54,11 @@ class ShellyService {
   }
 
   async setRelayState(deviceId, channel = 0, turn = 'on') {
+    // Use virtual service if enabled
+    if (this.useVirtual) {
+      return virtualShellyService.setRelayState(deviceId, channel, turn);
+    }
+
     try {
       const response = await axios.post(
         `${this.apiUrl}/device/relay/switch`,
@@ -74,6 +92,11 @@ class ShellyService {
   }
 
   async getDeviceList() {
+    // Use virtual service if enabled
+    if (this.useVirtual) {
+      return virtualShellyService.getDeviceList();
+    }
+
     try {
       const response = await axios.post(
         `${this.apiUrl}/device/list`,
@@ -104,6 +127,11 @@ class ShellyService {
   }
 
   async getTemperature(deviceId) {
+    // Use virtual service if enabled
+    if (this.useVirtual) {
+      return virtualShellyService.getTemperature(deviceId);
+    }
+
     const status = await this.getDeviceStatus(deviceId);
     
     if (status.success && status.data.device_status) {
@@ -123,6 +151,11 @@ class ShellyService {
   }
 
   async getHumidity(deviceId) {
+    // Use virtual service if enabled
+    if (this.useVirtual) {
+      return virtualShellyService.getHumidity(deviceId);
+    }
+
     const status = await this.getDeviceStatus(deviceId);
     
     if (status.success && status.data.device_status) {
@@ -142,6 +175,11 @@ class ShellyService {
   }
 
   async getPowerConsumption(deviceId) {
+    // Use virtual service if enabled
+    if (this.useVirtual) {
+      return virtualShellyService.getPowerConsumption(deviceId);
+    }
+
     const status = await this.getDeviceStatus(deviceId);
     
     if (status.success && status.data.device_status) {

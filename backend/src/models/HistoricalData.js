@@ -75,6 +75,18 @@ class HistoricalData {
     );
     return result.rows;
   }
+
+  static async findByRoomAndDateRange(roomId, startDate, endDate) {
+    const result = await db.query(
+      `SELECT * FROM historical_data 
+       WHERE room_id = $1 
+       AND timestamp >= $2 
+       AND timestamp <= $3
+       ORDER BY timestamp ASC`,
+      [roomId, startDate, endDate]
+    );
+    return result.rows;
+  }
 }
 
 export default HistoricalData;

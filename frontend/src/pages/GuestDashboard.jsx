@@ -18,10 +18,10 @@ const GuestDashboard = () => {
   const fetchRooms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/rooms', {
+      const response = await axios.get('/api/v1/rooms', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRooms(response.data);
+      setRooms(response.data.rooms || response.data);
     } catch (err) {
       console.error('Failed to fetch rooms:', err);
     }

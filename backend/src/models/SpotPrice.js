@@ -82,6 +82,28 @@ class SpotPrice {
     );
     return result.rows;
   }
+
+  static async findClosestToTimestamp(timestamp) {
+    const result = await db.query(
+      `SELECT * FROM spot_prices 
+       WHERE timestamp <= $1
+       ORDER BY timestamp DESC
+       LIMIT 1`,
+      [timestamp]
+    );
+    return result.rows[0];
+  }
+
+  static async findByDateRange(startDate, endDate) {
+    const result = await db.query(
+      `SELECT * FROM spot_prices 
+       WHERE timestamp >= $1 
+       AND timestamp <= $2
+       ORDER BY timestamp ASC`,
+      [startDate, endDate]
+    );
+    return result.rows;
+  }
 }
 
 export default SpotPrice;

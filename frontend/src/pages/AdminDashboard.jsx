@@ -30,12 +30,15 @@ export default function AdminDashboard({ onNavigate }) {
   const fetchData = async () => {
     try {
       const [roomsRes, pricesRes, energyRes, statusRes] = await Promise.allSettled([
-        api.get('/api/admin/rooms'),
-        api.get('/api/admin/spot-prices'),
-        api.get('/api/admin/energy-stats'),
-        api.get('/api/admin/status'),
+        api.get('/api/v1/rooms'),
+        api.get('/api/v1/settings/spot-prices'),
+        api.get('/api/v1/energy/stats'),
+        api.get('/api/v1/settings/status'),
       ]);
-      if (roomsRes.status === 'fulfilled') setRooms(roomsRes.value.data);
+      if (roomsRes.status === 'fulfilled') {
+        const roomsData = roomsRes.value.data;
+        setRooms(roomsData.rooms || roomsData);
+      }
       if (pricesRes.status === 'fulfilled') setSpotPrices(pricesRes.value.data);
       if (energyRes.status === 'fulfilled') setEnergyData(energyRes.value.data);
       if (statusRes.status === 'fulfilled') setSystemStatus(statusRes.value.data.status || 'Online');

@@ -48,6 +48,7 @@ const config = {
     apiUrl: process.env.SHELLY_CLOUD_API_URL || 'https://shelly-14-eu.shelly.cloud',
     authKey: process.env.SHELLY_AUTH_KEY || '',
     serverId: process.env.SHELLY_SERVER_ID || '',
+    useVirtual: process.env.USE_VIRTUAL_SHELLY === 'true',
   },
 
   // Nord Pool
@@ -56,6 +57,15 @@ const config = {
     area: process.env.NORD_POOL_AREA || 'FI',
     useMockPrices: process.env.USE_MOCK_PRICES === 'true',
   },
+
+  // Spot-hinta.fi (free alternative)
+  spotHinta: {
+    apiUrl: process.env.SPOT_HINTA_API_URL || 'https://api.spot-hinta.fi',
+    enabled: process.env.PRICE_SOURCE === 'spothinta',
+  },
+
+  // Price source: 'nordpool', 'spothinta', or 'mock'
+  priceSource: process.env.PRICE_SOURCE || 'mock',
 
   // OpenWeatherMap
   openWeather: {

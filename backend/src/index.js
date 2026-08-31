@@ -17,6 +17,10 @@ import bookingRoutes from './routes/bookingRoutes.js';
 import optimizationRoutes from './routes/optimizationRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import virtualShellyRoutes from './routes/virtualShellyRoutes.js';
+import contractRoutes from './routes/contractRoutes.js';
+import costRoutes from './routes/costRoutes.js';
+import alertRoutes from './routes/alertRoutes.js';
 
 // Cron jobs
 import cronJobs from './cron/jobs.js';
@@ -73,6 +77,14 @@ app.use(`${config.apiPrefix}/bookings`, bookingRoutes);
 app.use(`${config.apiPrefix}/optimization`, optimizationRoutes);
 app.use(`${config.apiPrefix}/ai`, aiRoutes);
 app.use(`${config.apiPrefix}/settings`, settingsRoutes);
+app.use(`${config.apiPrefix}/virtual-shelly`, virtualShellyRoutes);
+app.use(`${config.apiPrefix}/contracts`, contractRoutes);
+app.use(`${config.apiPrefix}/costs`, costRoutes);
+app.use(`${config.apiPrefix}/alerts`, alertRoutes);
+app.use(`${config.apiPrefix}/alerts`, alertRoutes);
+app.use(`${config.apiPrefix}/alerts`, alertRoutes);
+app.use(`${config.apiPrefix}/costs`, costRoutes);
+app.use(`${config.apiPrefix}/contracts`, contractRoutes);
 
 // Error handling
 app.use(notFound);
