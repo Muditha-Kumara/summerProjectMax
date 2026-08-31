@@ -45,6 +45,7 @@ const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost
     if (p.dataKey === 'totalEnergy') totalEnergyItem = p;
     else if (p.dataKey === 'totalCost') totalCostItem = p;
     else if (p.dataKey === 'spotPrice') spotPriceItem = p;
+    else if (p.dataKey.startsWith('roomCost_')) { /* skip – merged into roomItems */ }
     else if (p.dataKey.startsWith('room_')) roomItems.push(p);
   });
 
@@ -54,15 +55,22 @@ const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost
       {roomItems.length > 0 && (
         <div className="mb-2">
           <div className="text-gray-400 mb-1">{t('energy.consumption')}</div>
-          {roomItems.map((item) => (
-            <div key={item.dataKey} className="flex items-center justify-between py-0.5">
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                {item.name}
-              </span>
-              <span className="font-medium text-gray-700">{fmtEnergy(item.value)}</span>
-            </div>
-          ))}
+          {roomItems.map((item) => {
+            const roomId = item.dataKey.replace('room_', '');
+            const costItem = payload.find((p) => p.dataKey === `roomCost_${roomId}`);
+            return (
+              <div key={item.dataKey} className="flex items-center justify-between py-0.5 gap-4">
+                <span className="flex items-center gap-1.5 flex-1">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  {item.name}
+                </span>
+                <span className="font-medium text-gray-700">{fmtEnergy(item.value)}</span>
+                {costItem != null && (
+                  <span className="font-medium text-gray-700">{fmtCost(costItem.value)}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
       <div className="border-t pt-2 space-y-1">
@@ -265,6 +273,22 @@ const AdminEnergy = () => {
                   strokeWidth={1.5}
                   dot={false}
                   activeDot={{ r: 3 }}
+                />
+              ))}
+
+              {/* Per-room cost lines (invisible, used only for tooltip data) */}
+              {rooms.map((room) => (
+                <Line
+                  key={`cost_${room.id}`}
+                  yAxisId="totalCost"
+                  type="monotone"
+                  dataKey={`roomCost_${room.id}`}
+                  name={`cost_${room.id}`}
+                  stroke="transparent"
+                  strokeWidth={0}
+                  dot={false}
+                  activeDot={false}
+                  legendType="none"
                 />
               ))}
 

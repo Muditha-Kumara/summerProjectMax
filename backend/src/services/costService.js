@@ -253,7 +253,7 @@ class CostService {
           timestamp: slotStart.toISOString(),
         };
 
-        // Per-room energy
+        // Per-room energy and cost
         let totalEnergy = 0;
         let spotPriceSum = 0;
         let spotPriceCount = 0;
@@ -289,6 +289,13 @@ class CostService {
         entry.totalEnergy = Math.round(totalEnergy * 1000) / 1000;
         entry.totalCost = Math.round(totalCost * 100) / 100;
         entry.spotPrice = Math.round(avgSpotPrice * 10000) / 10000;
+
+        // Per-room cost (computed after avgSpotPrice is available)
+        for (const room of rooms) {
+          const roomEnergy = entry[`room_${room.id}`] || 0;
+          const roomCost = roomEnergy * (contract ? this.calculateEffectivePrice(contract, avgSpotPrice) : avgSpotPrice);
+          entry[`roomCost_${room.id}`] = Math.round(roomCost * 100) / 100;
+        }
 
         result.push(entry);
       }
