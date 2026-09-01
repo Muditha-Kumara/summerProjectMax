@@ -3,6 +3,100 @@ import db from './database.js';
 import logger from '../utils/logger.js';
 import { runMigrations } from './migrate.js';
 
+/**
+ * Generate ~10 days of realistic hourly energy-consumption history for every
+ * room so that the Energy Consumption charts (dashboard total + /admin/energy
+ * detail chart) have data immediately after seeding.
+ *
+ * Idempotent: skipped when readings already cover a full week (7 distinct days
+ * within the last 6 days).
+ */
+const seedEnergyHistory = async () => {
+  const existing = await db.query(
+    `SELECT COUNT(DISTINCT date_trunc('day', timestamp))::int AS n
+     FROM historical_data
+     WHERE timestamp >= CURRENT_TIMESTAMP - INTERVAL '6 days'`
+  );
+  if (existing.rows[0].n >= 7) {
+    logger.info('Energy history already covers a full week — skipping dummy data seed');
+    return;
+  }
+
+  const roomsRes = await db.query('SELECT id, name FROM rooms ORDER BY id');
+  const rooms = roomsRes.rows;
+  if (!rooms.length) return;
+
+  // Rough hourly kWh profile per device type (index = hour of day, UTC)
+  const profileFor = (name) => {
+    const base = new Array(24).fill(0);
+    for (let h = 0; h < 24; h++) {
+      // Quiet at night, peaks in morning (7-9) and evening (17-21)
+      const morning = Math.exp(-((h - 8) ** 2) / 6);
+      const evening = Math.exp(-((h - 19) ** 2) / 8);
+      const night = h < 6 || h > 22 ? 0.25 : 1;
+      base[h] = night * (0.3 + morning + evening);
+    }
+    switch (name) {
+      case 'Lämminvesivaraaja': // water heater: big bursts at night + midday
+        return base.map((v, h) => (h < 6 || h === 12 ? 1.8 + v : 0.2 + v * 0.3));
+      case 'Ilmalämpöpumppu': // heat pump: steady, higher in cold hours
+        return base.map((v, h) => 0.6 + v * 1.5 + (h < 7 || h > 21 ? 0.4 : 0));
+      case 'Varasto': // storage: mostly off
+        return base.map((v) => v * 0.1);
+      default: // living spaces
+        return base.map((v) => 0.15 + v * 0.8);
+    }
+  };
+
+  const DAYS = 10;
+  const now = new Date();
+  // Seed through the end of the current week (next Monday 00:00 UTC) so the
+  // week chart always shows a full Mon–Sun curve in demos.
+  const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  end.setUTCHours(0, 0, 0, 0);
+  end.setUTCDate(end.getUTCDate() - ((end.getUTCDay() + 6) % 7)); // back to Monday 00:00 UTC
+  const start = new Date(now.getTime() - DAYS * 24 * 60 * 60 * 1000);
+  start.setMinutes(0, 0, 0);
+
+  const values = [];
+  for (const room of rooms) {
+    const profile = profileFor(room.name);
+    let t = new Date(start);
+    let day = 0;
+    while (t <= end) {
+      const h = t.getUTCHours();
+      // Day-to-day variation + noise; seed is deterministic-ish via sin
+      const dayFactor = 0.8 + 0.4 * Math.abs(Math.sin((day + room.id) * 1.7));
+      const noise = 0.85 + 0.3 * Math.abs(Math.sin((t.getTime() / 3.6e6 + room.id * 13) * 2.3));
+      const energy = Math.max(0, profile[h] * dayFactor * noise); // kW-ish rate
+      const energyKwh = energy / 4; // kWh consumed in this 15-min slot
+      const temp = 20 + 2 * Math.sin((h - 14) / 24 * 2 * Math.PI) + (Math.random() - 0.5);
+      const humidity = 45 + 8 * Math.sin(day / 3 + room.id) + (Math.random() - 0.5) * 4;
+      const outdoor = 3 + 7 * Math.sin((h - 15) / 24 * 2 * Math.PI) + (Math.random() - 0.5) * 2;
+      // Spot price: cheap at night, pricier morning/evening (EUR/kWh)
+      const spot = 0.04 + 0.09 * (profile[h] / 1.3) + (Math.random() - 0.5) * 0.02;
+      const target = room.name === 'Lämminvesivaraaja' ? 55 : room.name === 'Varasto' ? 15 : 21;
+      values.push(
+        `(${room.id}, '${t.toISOString().replace("T", " ").replace("Z", "")}', ${temp.toFixed(2)}, ${target.toFixed(2)}, ${energyKwh.toFixed(4)}, ${humidity.toFixed(1)}, ${outdoor.toFixed(1)}, ${Math.max(0.01, spot).toFixed(4)}, ${energy > 0.3})`
+      );
+      t = new Date(t.getTime() + 15 * 60 * 1000); // 15-min readings
+      if (t.getUTCHours() === 0 && t.getUTCMinutes() === 0) day++;
+    }
+  }
+
+  // Bulk insert in chunks to keep statements manageable
+  const CHUNK = 2000;
+  for (let i = 0; i < values.length; i += CHUNK) {
+    const slice = values.slice(i, i + CHUNK).join(',');
+    await db.query(
+      `INSERT INTO historical_data
+       (room_id, timestamp, current_temp, target_temp, energy_consumption, humidity, outdoor_temp, spot_price, relay_state)
+       VALUES ${slice}`
+    );
+  }
+  logger.info(`Seeded ${values.length} historical energy readings (${DAYS} days) for ${rooms.length} rooms`);
+};
+
 const seedData = async () => {
   try {
     // Ensure tables exist before seeding
@@ -119,6 +213,11 @@ const seedData = async () => {
       );
     }
     logger.info(`${rooms.length} rooms created`);
+
+    // Seed ~10 days of dummy hourly energy-consumption history so the
+    // Energy Consumption charts (dashboard totals / admin energy page)
+    // have data out of the box. Skipped when recent data already exists.
+    await seedEnergyHistory();
 
     // Create default system settings
     // Note: Mode temperatures are now room-specific (see ROOM_MODE_TEMPS in optimizationService.js)

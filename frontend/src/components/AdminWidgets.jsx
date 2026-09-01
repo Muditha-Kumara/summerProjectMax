@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   BarChart,
@@ -8,9 +9,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   ComposedChart,
-  Line,
-  AreaChart,
-  Area,
   CartesianGrid,
 } from 'recharts';
 import api from '../services/api';
@@ -174,10 +172,49 @@ export function SpotPriceChart({ data = [] }) {
   );
 }
 
-/* ───────── Energy Stats Chart ───────── */
-export function EnergyStatsChart({ data = [] }) {
+/* ───────── Energy Stats Chart ─────────
+ * Self-fetching widget backed by GET /costs/timeseries.
+ * Dashboard shows only period totals (kWh + cost); the detailed
+ * per-bucket chart lives on the /admin/energy page.
+ * Day   → total for today's 24 hours
+ * Week  → total Mon–Sun
+ * Month → total for the calendar month
+ * Year  → total for the calendar year
+ */
+function getEnergyDateRange(period) {
+  const now = new Date();
+  if (period === 'day') {
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      endDate: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1),
+    };
+  }
+  if (period === 'week') {
+    // Monday-based week: this week's Monday → next Monday
+    const dayOfWeek = now.getDay(); // 0=Sun … 6=Sat
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - mondayOffset);
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(monday.getDate() + 7);
+    return { startDate: monday, endDate: nextMonday };
+  }
+  if (period === 'month') {
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+      endDate: new Date(now.getFullYear(), now.getMonth() + 1, 1),
+    };
+  }
+  return {
+    startDate: new Date(now.getFullYear(), 0, 1),
+    endDate: new Date(now.getFullYear() + 1, 0, 1),
+  };
+}
+
+export function EnergyStatsChart() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState('day');
+  const [points, setPoints] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const PERIOD_OPTIONS = [
     { value: 'day', label: t('admin.widgets.day') },
@@ -186,8 +223,41 @@ export function EnergyStatsChart({ data = [] }) {
     { value: 'year', label: t('admin.widgets.year') },
   ];
 
-  const filtered =
-    data.filter((d) => !d.period || d.period === period) || data;
+  useEffect(() => {
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const { startDate, endDate } = getEnergyDateRange(period);
+        const fmt = (d) => d.toISOString().split('T')[0];
+        const res = await api.get('/costs/timeseries', {
+          params: { startDate: fmt(startDate), endDate: fmt(endDate) },
+        });
+        if (!cancelled && res.data?.success) {
+          setPoints(res.data.data.points || []);
+        }
+      } catch {
+        if (!cancelled) setPoints([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  const totalKwh = points.reduce((sum, p) => sum + (p.totalEnergy || 0), 0);
+  const totalCost = points.reduce((sum, p) => sum + (p.totalCost || 0), 0);
+  const hasData = totalKwh > 0;
+
+  const periodLabel = {
+    day: t('admin.widgets.today'),
+    week: t('admin.widgets.thisWeek'),
+    month: t('admin.widgets.thisMonth'),
+    year: t('admin.widgets.thisYear'),
+  }[period];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -205,24 +275,30 @@ export function EnergyStatsChart({ data = [] }) {
           ))}
         </select>
       </div>
-      {!filtered.length ? (
+      {loading ? (
+        <p className="text-gray-500 text-sm">{t('admin.widgets.loading')}</p>
+      ) : !hasData ? (
         <p className="text-gray-500 text-sm">{t('admin.widgets.noEnergyData')}</p>
       ) : (
-        <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={filtered}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-            <YAxis tick={{ fontSize: 11 }} unit=" kWh" />
-            <Tooltip formatter={(v) => [`${v} kWh`]} />
-            <Area
-              type="monotone"
-              dataKey="kWh"
-              stroke="#3b82f6"
-              fill="#93c5fd"
-              strokeWidth={2}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="py-4">
+          <p className="text-sm text-gray-500 mb-1">{periodLabel}</p>
+          <div className="flex items-end gap-6">
+            <div>
+              <p className="text-4xl font-bold text-blue-600">{totalKwh.toFixed(1)} kWh</p>
+              <p className="text-xs text-gray-500 mt-1">{t('admin.widgets.totalConsumption')}</p>
+            </div>
+            <div>
+              <p className="text-2xl font-semibold text-orange-600">{totalCost.toFixed(2)} €</p>
+              <p className="text-xs text-gray-500 mt-1">{t('admin.widgets.estimatedCost')}</p>
+            </div>
+          </div>
+          <Link
+            to="/admin/energy"
+            className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            {t('admin.widgets.viewDetails')} →
+          </Link>
+        </div>
       )}
     </div>
   );

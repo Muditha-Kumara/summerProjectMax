@@ -194,7 +194,7 @@ export default function AdminDashboard() {
         </section>
         <section>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('admin.dashboard.energyConsumption')}</h2>
-          <EnergyStatsChart data={[]} />
+          <EnergyStatsChart />
         </section>
       </div>
 
