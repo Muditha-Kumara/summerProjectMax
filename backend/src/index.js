@@ -100,8 +100,9 @@ const startServer = async () => {
     // Run migrations
     await runMigrations();
 
-    // Start cron jobs
-    if (config.nodeEnv === 'production') {
+    // Start cron jobs (weather, spot prices, optimization, etc.)
+    // Runs in every environment except tests, so dev also refreshes prices from the internet.
+    if (config.nodeEnv !== 'test') {
       cronJobs.start();
     }
 

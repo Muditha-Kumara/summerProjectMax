@@ -117,7 +117,16 @@ class OptimizationController {
     try {
       const { hours = 24 } = req.query;
 
-      const forecast = await NordPoolService.getForecast(parseInt(hours));
+      let forecast = await NordPoolService.getForecast(parseInt(hours));
+
+      // If no future prices are stored locally, fetch fresh data from the
+      // internet (spot-hinta.fi / Nord Pool) and save it in the database.
+      if (!forecast.prices || forecast.prices.length === 0) {
+        const fetchResult = await NordPoolService.fetchSpotPrices(48);
+        if (fetchResult.success) {
+          forecast = await NordPoolService.getForecast(parseInt(hours));
+        }
+      }
 
       return res.json({
         success: forecast.success,
