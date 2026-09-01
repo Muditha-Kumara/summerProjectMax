@@ -189,11 +189,11 @@ const AdminEnergy = () => {
     rooms.forEach((room, i) => {
       const totalEnergy = points.reduce((sum, p) => sum + (p[`room_${room.id}`] || 0), 0);
       const totalCost = points.reduce((sum, p) => sum + (p[`roomCost_${room.id}`] || 0), 0);
-      energy.push({ name: room.name, value: Math.round(totalEnergy * 1000) / 1000, color: ROOM_COLORS[i % ROOM_COLORS.length] });
-      cost.push({ name: room.name, value: Math.round(totalCost * 100) / 100, color: ROOM_COLORS[i % ROOM_COLORS.length] });
+      energy.push({ name: t(`roomNames.${room.name}`, room.name), value: Math.round(totalEnergy * 1000) / 1000, color: ROOM_COLORS[i % ROOM_COLORS.length] });
+      cost.push({ name: t(`roomNames.${room.name}`, room.name), value: Math.round(totalCost * 100) / 100, color: ROOM_COLORS[i % ROOM_COLORS.length] });
     });
     return { energy, cost };
-  }, [points, rooms]);
+  }, [points, rooms, t]);
 
   // ── Render ──
 
@@ -285,7 +285,7 @@ const AdminEnergy = () => {
                   yAxisId="energy"
                   type="monotone"
                   dataKey={`room_${room.id}`}
-                  name={room.name}
+                  name={t(`roomNames.${room.name}`, room.name)}
                   stroke={ROOM_COLORS[i % ROOM_COLORS.length]}
                   strokeDasharray={ROOM_DASHES[i % ROOM_DASHES.length]}
                   strokeWidth={1.5}

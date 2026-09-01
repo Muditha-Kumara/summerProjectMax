@@ -52,7 +52,9 @@ export function RoomOverviewGrid({ rooms = [] }) {
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
         >
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-gray-900">{room.name}</h3>
+            <h3 className="font-semibold text-gray-900">
+              {t(`roomNames.${room.name}`, room.name)}
+            </h3>
             <DeviceStatusBadge
               heatingOn={room.heating_on}
               deviceOnline={room.device_online}

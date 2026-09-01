@@ -34,6 +34,15 @@
     "Lämminvesivaraaja": "Water Heater",
     "Ilmalämpöpumppu": "Heat Pump"
   },
+  "roomNames": {
+    "Kodinhoitohuone": "Utility Room",
+    "Eteinen": "Hallway",
+    "Makuuhuone": "Bedroom",
+    "Olohuone": "Living Room",
+    "Varasto": "Storage",
+    "Lämminvesivaraaja": "Water Heater",
+    "Ilmalämpöpumppu": "Heat Pump"
+  },
   "controlModes": {
     "auto": "Automatic",
     "manual": "Manual",

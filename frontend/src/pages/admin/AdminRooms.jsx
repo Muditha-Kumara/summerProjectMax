@@ -123,7 +123,9 @@ const AdminRooms = () => {
             <div key={room.id} className="border-2 border-gray-200 rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-800 text-lg">{room.name_fi || room.name}</h4>
+                  <h4 className="font-semibold text-gray-800 text-lg">
+                    {t(`roomNames.${room.name}`, room.name)}
+                  </h4>
                   {room.shelly_device_type && (
                     <p className="text-sm text-gray-600 mt-1">{room.shelly_device_type}</p>
                   )}

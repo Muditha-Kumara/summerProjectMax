@@ -34,6 +34,15 @@
     "Lämminvesivaraaja": "Lämminvesivaraaja",
     "Ilmalämpöpumppu": "Ilmalämpöpumppu"
   },
+  "roomNames": {
+    "Kodinhoitohuone": "Kodinhoitohuone",
+    "Eteinen": "Eteinen",
+    "Makuuhuone": "Makuuhuone",
+    "Olohuone": "Olohuone",
+    "Varasto": "Varasto",
+    "Lämminvesivaraaja": "Lämminvesivaraaja",
+    "Ilmalämpöpumppu": "Ilmalämpöpumppu"
+  },
   "controlModes": {
     "auto": "Automaattinen",
     "manual": "Manuaalinen",

@@ -682,7 +682,7 @@ function DeviceMappingTab() {
               rooms.map((room) => (
                 <tr key={room._id || room.id} className="hover:bg-gray-100">
                   <td className="px-4 py-2 font-medium text-gray-900 text-sm">
-                    {room.name}
+                    {t(`roomNames.${room.name}`, room.name)}
                   </td>
                   <td className="px-4 py-2">
                     <select

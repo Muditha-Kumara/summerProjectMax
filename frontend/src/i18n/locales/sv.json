@@ -33,8 +33,15 @@
     "Varasto": "Förråd",
     "Lämminvesivaraaja": "Varmvattenberedare",
     "Ilmalämpöpumppu": "Luftvärmepump"
-  },
-  "controlModes": {
+  },  "roomNames": {
+    "Kodinhoitohuone": "Tvättstuga",
+    "Eteinen": "Hallen",
+    "Makuuhuone": "Sovrum",
+    "Olohuone": "Vardagsrum",
+    "Varasto": "Förråd",
+    "Lämminvesivaraaja": "Varmvattenberedare",
+    "Ilmalämpöpumppu": "Luftvärmepump"
+  },  "controlModes": {
     "auto": "Automatisk",
     "manual": "Manuell",
     "eco": "Ekonomisk",
