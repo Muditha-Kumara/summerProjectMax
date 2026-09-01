@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import roomService from '../../services/roomService';
 
 const AdminRooms = () => {
+  const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -89,7 +91,7 @@ const AdminRooms = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading rooms...</div>
+        <div className="text-gray-500">{t('admin.rooms.loadingRooms')}</div>
       </div>
     );
   }
@@ -97,12 +99,12 @@ const AdminRooms = () => {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600">{t('admin.rooms.failedToFetch')}</p>
         <button 
           onClick={fetchRooms}
           className="mt-2 text-red-600 underline hover:no-underline"
         >
-          Retry
+          {t('admin.rooms.retry')}
         </button>
       </div>
     );
@@ -110,11 +112,11 @@ const AdminRooms = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Room Management</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">{t('admin.rooms.title')}</h1>
       
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">Device Mapping</h3>
-        <p className="text-gray-500 mb-4">Map Shelly devices to rooms and configure thermal capacity settings.</p>
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('admin.rooms.deviceMapping')}</h3>
+        <p className="text-gray-500 mb-4">{t('admin.rooms.deviceMappingDesc')}</p>
         
         <div className="space-y-4">
           {rooms.map((room) => (
@@ -126,7 +128,7 @@ const AdminRooms = () => {
                     <p className="text-sm text-gray-600 mt-1">{room.shelly_device_type}</p>
                   )}
                   {room.shelly_device_id && (
-                    <p className="text-xs text-gray-500 mt-1">Device ID: {room.shelly_device_id}</p>
+                    <p className="text-xs text-gray-500 mt-1">{t('admin.rooms.deviceId')}: {room.shelly_device_id}</p>
                   )}
                 </div>
                 
@@ -141,7 +143,7 @@ const AdminRooms = () => {
                         : 'bg-green-500 hover:bg-green-600 text-white'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    {togglingRooms[room.id] ? 'Toggling...' : room.heating_on ? 'Turn OFF' : 'Turn ON'}
+                    {togglingRooms[room.id] ? t('admin.rooms.toggling') : room.heating_on ? t('admin.rooms.turnOff') : t('admin.rooms.turnOn')}
                   </button>
                 )}
               </div>
@@ -150,20 +152,20 @@ const AdminRooms = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                 {room.current_temp !== null && (
                   <div className="bg-gray-50 rounded p-2">
-                    <p className="text-xs text-gray-500">Current Temp</p>
+                    <p className="text-xs text-gray-500">{t('admin.rooms.currentTemp')}</p>
                     <p className="text-lg font-semibold text-gray-800">{room.current_temp}°C</p>
                   </div>
                 )}
                 {room.target_temp !== null && (
                   <div className="bg-gray-50 rounded p-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-500">Target Temp</p>
+                      <p className="text-xs text-gray-500">{t('admin.rooms.targetTemp')}</p>
                       {!editingTemp[room.id] && (
                         <button
                           onClick={() => setEditingTemp(prev => ({ ...prev, [room.id]: true }))}
                           className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          Edit
+                          {t('admin.rooms.edit')}
                         </button>
                       )}
                     </div>
@@ -210,12 +212,12 @@ const AdminRooms = () => {
                 )}
                 {room.humidity !== null && (
                   <div className="bg-gray-50 rounded p-2">
-                    <p className="text-xs text-gray-500">Humidity</p>
+                    <p className="text-xs text-gray-500">{t('admin.rooms.humidity')}</p>
                     <p className="text-lg font-semibold text-gray-800">{room.humidity}%</p>
                   </div>
                 )}
                 <div className="bg-gray-50 rounded p-2">
-                  <p className="text-xs text-gray-500">Status</p>
+                  <p className="text-xs text-gray-500">{t('admin.rooms.statusLabel')}</p>
                   <p className={`text-sm font-semibold ${
                     !room.device_online 
                       ? 'text-red-600' 
@@ -224,10 +226,10 @@ const AdminRooms = () => {
                         : 'text-blue-600'
                   }`}>
                     {!room.device_online 
-                      ? 'Offline' 
+                      ? t('admin.rooms.offline') 
                       : room.heating_on 
-                        ? ' Heating' 
-                        : '❄️ Off'}
+                        ? t('admin.rooms.heating') 
+                        : t('admin.rooms.off')}
                   </p>
                 </div>
               </div>
@@ -235,7 +237,7 @@ const AdminRooms = () => {
               {/* Alert Threshold Selector */}
               <div className="border-t pt-3 mt-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Alert Threshold (°C)
+                  {t('admin.rooms.alertThreshold')}
                 </label>
                 <div className="flex items-center gap-3">
                   <select
@@ -247,21 +249,21 @@ const AdminRooms = () => {
                     disabled={updatingThreshold[room.id]}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   >
-                    <option value="">No alert threshold</option>
-                    <option value="5">5°C - Freeze warning</option>
-                    <option value="10">10°C - Low temperature</option>
-                    <option value="15">15°C - Cool warning</option>
-                    <option value="20">20°C - Room temperature</option>
-                    <option value="25">25°C - Warm warning</option>
-                    <option value="30">30°C - High temperature</option>
+                    <option value="">{t('admin.rooms.noAlert')}</option>
+                    <option value="5">{t('admin.rooms.freezeWarning')}</option>
+                    <option value="10">{t('admin.rooms.lowTemp')}</option>
+                    <option value="15">{t('admin.rooms.coolWarning')}</option>
+                    <option value="20">{t('admin.rooms.roomTemp')}</option>
+                    <option value="25">{t('admin.rooms.warmWarning')}</option>
+                    <option value="30">{t('admin.rooms.highTemp')}</option>
                   </select>
                   {updatingThreshold[room.id] && (
-                    <span className="text-sm text-gray-500">Updating...</span>
+                    <span className="text-sm text-gray-500">{t('admin.rooms.updating')}</span>
                   )}
                 </div>
                 {room.alert_threshold && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Alert will trigger when temperature drops below {parseFloat(room.alert_threshold).toFixed(2)}°C
+                    {t('admin.rooms.alertWillTrigger')} {parseFloat(room.alert_threshold).toFixed(2)}°C
                   </p>
                 )}
               </div>
@@ -270,7 +272,7 @@ const AdminRooms = () => {
               {room.is_critical && room.critical_min_temp && (
                 <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
                   <p className="text-sm text-red-600 font-semibold">
-                    ⚠️ Critical: Never drop below {room.critical_min_temp}°C
+                    {t('admin.rooms.criticalWarning')} {room.critical_min_temp}°C
                   </p>
                 </div>
               )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 import {
   RoomOverviewGrid,
@@ -9,6 +10,7 @@ import {
 } from '../../components/AdminWidgets';
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [outdoorTemp, setOutdoorTemp] = useState(null);
   const [weather, setWeather] = useState(null);
@@ -90,12 +92,12 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-800">{t('admin.dashboard.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Smart Heating System Overview
+            {t('admin.dashboard.overview')}
             {lastUpdated && (
               <span className="ml-2">
-                • Last updated: {lastUpdated.toLocaleTimeString()}
+                • {t('admin.dashboard.lastUpdated')}: {lastUpdated.toLocaleTimeString()}
               </span>
             )}
           </p>
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
             disabled={loading}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors disabled:opacity-50"
           >
-            {loading ? '↻ Refreshing...' : '↻ Refresh'}
+            {loading ? t('admin.dashboard.refreshing') : t('admin.dashboard.refresh')}
           </button>
           <OptimizeAllButton onDone={fetchData} />
         </div>
@@ -116,15 +118,15 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <StatusIndicator label="Backend API" status={apiStatus.backend} />
-            <StatusIndicator label="Weather Service" status={apiStatus.weather} />
-            <StatusIndicator label="Price Data" status={apiStatus.prices} />
+            <StatusIndicator label={t('admin.dashboard.backendApi')} status={apiStatus.backend} />
+            <StatusIndicator label={t('admin.dashboard.weatherService')} status={apiStatus.weather} />
+            <StatusIndicator label={t('admin.dashboard.priceData')} status={apiStatus.prices} />
           </div>
           {outdoorTemp !== null && (
             <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg w-fit">
               <span className="text-2xl">🌡️</span>
               <div>
-                <p className="text-xs text-gray-500">Outdoor</p>
+                <p className="text-xs text-gray-500">{t('admin.dashboard.outdoor')}</p>
                 <p className="text-lg font-bold text-blue-700">{outdoorTemp}°C</p>
               </div>
               {weather && (
@@ -140,30 +142,30 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
-          title="Total Rooms"
+          title={t('admin.dashboard.totalRooms')}
           value={stats.totalRooms}
-          subtitle={`${stats.activeRooms} active`}
+          subtitle={`${stats.activeRooms} ${t('admin.dashboard.active')}`}
           icon="🏠"
           color="blue"
         />
         <StatCard
-          title="Avg Temperature"
+          title={t('admin.dashboard.avgTemperature')}
           value={`${stats.avgTemp}°C`}
-          subtitle={`Target: ${stats.avgTarget}°C`}
+          subtitle={`${t('admin.dashboard.target')}: ${stats.avgTarget}°C`}
           icon="🌡️"
           color="orange"
         />
         <StatCard
-          title="Current Price"
+          title={t('admin.dashboard.currentPrice')}
           value={stats.currentPrice ? `${(stats.currentPrice * 100).toFixed(2)} c/kWh` : '--'}
-          subtitle={stats.avgPrice ? `Avg: ${(stats.avgPrice * 100).toFixed(2)} c/kWh` : 'No data'}
+          subtitle={stats.avgPrice ? `${t('admin.dashboard.target')}: ${(stats.avgPrice * 100).toFixed(2)} c/kWh` : t('admin.dashboard.noData')}
           icon="💰"
           color="green"
         />
         <StatCard
-          title="Active Bookings"
+          title={t('admin.dashboard.activeBookings')}
           value={activeBookings.length}
-          subtitle={activeBookings.length > 0 ? 'Guests checked in' : 'No guests'}
+          subtitle={activeBookings.length > 0 ? t('admin.dashboard.guestsCheckedIn') : t('admin.dashboard.noGuests')}
           icon="📅"
           color="purple"
         />
@@ -172,12 +174,12 @@ export default function AdminDashboard() {
       {/* Room Overview */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Room Overview</h2>
+          <h2 className="text-xl font-semibold text-gray-800">{t('admin.dashboard.roomOverview')}</h2>
           <Link
             to="/admin/rooms"
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
-            View All →
+            {t('admin.dashboard.viewAll')}
           </Link>
         </div>
         <RoomOverviewGrid rooms={rooms} />
@@ -186,11 +188,11 @@ export default function AdminDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Spot Prices Today</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('admin.dashboard.spotPricesToday')}</h2>
           <SpotPriceChart data={spotPrices} />
         </section>
         <section>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Energy Consumption</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('admin.dashboard.energyConsumption')}</h2>
           <EnergyStatsChart data={[]} />
         </section>
       </div>
@@ -199,23 +201,23 @@ export default function AdminDashboard() {
       {activeBookings.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Active Bookings</h2>
+            <h2 className="text-xl font-semibold text-gray-800">{t('admin.dashboard.activeBookings')}</h2>
             <Link
               to="/admin/bookings"
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              View All →
+              {t('admin.dashboard.viewAll')}
             </Link>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Guest</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Check-in</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Check-out</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Preferred Temp</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('admin.dashboard.guest')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('admin.dashboard.checkIn')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('admin.dashboard.checkOut')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('admin.dashboard.preferredTemp')}</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-600">{t('admin.dashboard.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -240,23 +242,23 @@ export default function AdminDashboard() {
 
       {/* Quick Actions */}
       <section>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('admin.dashboard.quickActions')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <QuickActionCard
-            title="Manage Rooms"
-            description="Configure heating devices and settings"
+            title={t('admin.dashboard.manageRooms')}
+            description={t('admin.dashboard.manageRoomsDesc')}
             icon="🏠"
             link="/admin/rooms"
           />
           <QuickActionCard
-            title="View Bookings"
-            description="Manage guest reservations"
+            title={t('admin.dashboard.viewBookings')}
+            description={t('admin.dashboard.viewBookingsDesc')}
             icon="📅"
             link="/admin/bookings"
           />
           <QuickActionCard
-            title="System Settings"
-            description="API keys and configuration"
+            title={t('admin.dashboard.systemSettings')}
+            description={t('admin.dashboard.systemSettingsDesc')}
             icon="⚙️"
             link="/admin/settings"
           />

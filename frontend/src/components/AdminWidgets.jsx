@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -39,8 +40,9 @@ export function DeviceStatusBadge({ heatingOn, deviceOnline }) {
 
 /* ───────── Room Overview Grid ───────── */
 export function RoomOverviewGrid({ rooms = [] }) {
+  const { t } = useTranslation();
   if (!rooms.length)
-    return <p className="text-gray-500 text-sm">No rooms available.</p>;
+    return <p className="text-gray-500 text-sm">{t('admin.widgets.noRoomsAvailable')}</p>;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
@@ -58,13 +60,13 @@ export function RoomOverviewGrid({ rooms = [] }) {
           </div>
           <div className="text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-gray-500">Current Temp</span>
+              <span className="text-gray-500">{t('admin.widgets.currentTemp')}</span>
               <span className="font-medium">
                 {room.current_temp ?? room.currentTemp ?? '--'}°C
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Target Temp</span>
+              <span className="text-gray-500">{t('admin.widgets.targetTemp')}</span>
               <span className="font-medium">
                 {room.target_temp ?? room.targetTemp ?? '--'}°C
               </span>
@@ -78,11 +80,12 @@ export function RoomOverviewGrid({ rooms = [] }) {
 
 /* ───────── Spot Price Chart ───────── */
 export function SpotPriceChart({ data = [] }) {
+  const { t } = useTranslation();
   if (!data.length)
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">Spot Prices (Today)</h3>
-        <p className="text-gray-500 text-sm">No price data available.</p>
+        <h3 className="font-semibold text-gray-900 mb-3">{t('admin.widgets.spotPricesToday')}</h3>
+        <p className="text-gray-500 text-sm">{t('admin.widgets.noPriceData')}</p>
       </div>
     );
 
@@ -94,7 +97,7 @@ export function SpotPriceChart({ data = [] }) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="font-semibold text-gray-900 mb-3">Spot Prices (Today)</h3>
+      <h3 className="font-semibold text-gray-900 mb-3">{t('admin.widgets.spotPricesToday')}</h3>
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -102,7 +105,7 @@ export function SpotPriceChart({ data = [] }) {
           <YAxis tick={{ fontSize: 11 }} unit=" c" />
           <Tooltip
             formatter={(value) => [`${value} c/kWh`]}
-            labelFormatter={(h) => `Hour: ${h}`}
+            labelFormatter={(h) => `${t('admin.widgets.hour')}: ${h}`}
           />
           <Bar dataKey="price" fill="#cbd5e1" radius={[2, 2, 0, 0]} />
           <Bar dataKey="heating" fill="#22c55e" radius={[2, 2, 0, 0]} />
@@ -110,11 +113,10 @@ export function SpotPriceChart({ data = [] }) {
       </ResponsiveContainer>
       <div className="flex gap-4 mt-2 text-xs text-gray-500">
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 bg-gray-300 rounded" /> Price
+          <span className="inline-block w-3 h-3 bg-gray-300 rounded" /> {t('admin.widgets.price')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 bg-green-500 rounded" /> Heating
-          Scheduled
+          <span className="inline-block w-3 h-3 bg-green-500 rounded" /> {t('admin.widgets.heatingScheduled')}
         </span>
       </div>
     </div>
@@ -122,15 +124,16 @@ export function SpotPriceChart({ data = [] }) {
 }
 
 /* ───────── Energy Stats Chart ───────── */
-const PERIOD_OPTIONS = [
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-  { value: 'year', label: 'Year' },
-];
-
 export function EnergyStatsChart({ data = [] }) {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState('day');
+
+  const PERIOD_OPTIONS = [
+    { value: 'day', label: t('admin.widgets.day') },
+    { value: 'week', label: t('admin.widgets.week') },
+    { value: 'month', label: t('admin.widgets.month') },
+    { value: 'year', label: t('admin.widgets.year') },
+  ];
 
   const filtered =
     data.filter((d) => !d.period || d.period === period) || data;
@@ -138,7 +141,7 @@ export function EnergyStatsChart({ data = [] }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-900">Energy Consumption</h3>
+        <h3 className="font-semibold text-gray-900">{t('admin.widgets.energyConsumption')}</h3>
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value)}
@@ -152,7 +155,7 @@ export function EnergyStatsChart({ data = [] }) {
         </select>
       </div>
       {!filtered.length ? (
-        <p className="text-gray-500 text-sm">No energy data available.</p>
+        <p className="text-gray-500 text-sm">{t('admin.widgets.noEnergyData')}</p>
       ) : (
         <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={filtered}>
@@ -176,6 +179,7 @@ export function EnergyStatsChart({ data = [] }) {
 
 /* ───────── Optimize All Button ───────── */
 export function OptimizeAllButton({ onDone }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -184,11 +188,11 @@ export function OptimizeAllButton({ onDone }) {
     setMessage('');
     try {
       await api.post('/api/admin/optimize');
-      setMessage('Optimization complete!');
+      setMessage(t('admin.widgets.optimizationComplete'));
       setTimeout(() => setMessage(''), 4000);
       if (onDone) onDone();
     } catch {
-      setMessage('Optimization failed.');
+      setMessage(t('admin.widgets.optimizationFailed'));
       setTimeout(() => setMessage(''), 4000);
     } finally {
       setLoading(false);

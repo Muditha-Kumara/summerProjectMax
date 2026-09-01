@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isAdminLogin = location.pathname === '/admin';
 
@@ -18,6 +20,10 @@ const AdminLayout = () => {
     navigate('/admin');
   };
 
+  const handleLanguageChange = (e) => {
+    i18n.changeLanguage(e.target.value);
+  };
+
   if (isAdminLogin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800">
@@ -29,11 +35,11 @@ const AdminLayout = () => {
   }
 
   const navItems = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/admin/rooms', label: 'Rooms', icon: '🏠' },
-    { path: '/admin/bookings', label: 'Bookings', icon: '📅' },
-    { path: '/admin/energy', label: 'Energy', icon: '⚡' },
-    { path: '/admin/settings', label: 'Settings', icon: '⚙️' },
+    { path: '/admin/dashboard', label: t('admin.nav.dashboard'), icon: '📊' },
+    { path: '/admin/rooms', label: t('admin.nav.rooms'), icon: '🏠' },
+    { path: '/admin/bookings', label: t('admin.nav.bookings'), icon: '📅' },
+    { path: '/admin/energy', label: t('admin.nav.energy'), icon: '⚡' },
+    { path: '/admin/settings', label: t('admin.nav.settings'), icon: '⚙️' },
   ];
 
   return (
@@ -42,12 +48,12 @@ const AdminLayout = () => {
       <header className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between bg-gray-900 px-4 py-3 shadow-lg lg:hidden">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🔥</span>
-          <span className="text-xl font-bold text-white">Admin Panel</span>
+          <span className="text-xl font-bold text-white">{t('admin.panelTitle')}</span>
         </div>
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="rounded-md p-2 text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-400"
-          aria-label={isSidebarOpen ? 'Close menu' : 'Open menu'}
+          aria-label={isSidebarOpen ? t('admin.closeMenu') : t('admin.openMenu')}
         >
           <svg
             className="h-7 w-7"
@@ -81,8 +87,8 @@ const AdminLayout = () => {
         }`}
       >
         <div className="p-6 shrink-0">
-          <h1 className="text-2xl font-bold text-primary-400">🔥 Admin Panel</h1>
-          <p className="text-sm text-gray-400 mt-1">Smart Heating System</p>
+          <h1 className="text-2xl font-bold text-primary-400">🔥 {t('admin.panelTitle')}</h1>
+          <p className="text-sm text-gray-400 mt-1">{t('admin.subtitle')}</p>
         </div>
 
         <nav className="mt-2 flex-1 overflow-y-auto">
@@ -103,13 +109,27 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="p-6 shrink-0">
+        <div className="p-6 shrink-0 space-y-3">
+          {/* Language Selector */}
+          <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg">
+            <span className="text-lg">🌐</span>
+            <select
+              value={i18n.language?.split('-')[0] || 'fi'}
+              onChange={handleLanguageChange}
+              className="flex-1 bg-transparent text-white text-sm focus:outline-none cursor-pointer"
+            >
+              <option value="fi" className="text-gray-900">🇫🇮 Suomi</option>
+              <option value="sv" className="text-gray-900">🇸🇪 Svenska</option>
+              <option value="en" className="text-gray-900">🇬🇧 English</option>
+            </select>
+          </div>
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
           >
             <span className="text-xl">🚪</span>
-            <span>Logout</span>
+            <span>{t('admin.logout')}</span>
           </button>
         </div>
       </aside>

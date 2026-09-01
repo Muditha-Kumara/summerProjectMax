@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 
 export default function AdminSettings() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('apiKeys');
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('admin.settings.title')}</h1>
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -19,7 +21,7 @@ export default function AdminSettings() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            API Keys
+            {t('admin.settings.apiKeys')}
           </button>
           <button
             onClick={() => setActiveTab('deviceMapping')}
@@ -29,7 +31,7 @@ export default function AdminSettings() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            Device Mapping
+            {t('admin.settings.deviceMapping')}
           </button>
           <button
             onClick={() => setActiveTab('system')}
@@ -39,7 +41,7 @@ export default function AdminSettings() {
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            System
+            {t('admin.settings.system')}
           </button>
         </nav>
       </div>
@@ -53,7 +55,8 @@ export default function AdminSettings() {
 }
 
 /* ───────── Section Wrapper Component ───────── */
-function SettingsSection({ title, children, onSave, onTest, saveLabel = 'Save', testLabel = 'Test', saving = false, testing = false, message = '', error = '' }) {
+function SettingsSection({ title, children, onSave, onTest, saveLabel, testLabel, saving = false, testing = false, message = '', error = '' }) {
+  const { t } = useTranslation();
   return (
     <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
       <div className="flex items-center justify-between mb-4">
@@ -66,7 +69,7 @@ function SettingsSection({ title, children, onSave, onTest, saveLabel = 'Save', 
               disabled={testing}
               className="px-4 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 disabled:opacity-50 transition-colors"
             >
-              {testing ? 'Testing...' : testLabel}
+              {testing ? t('admin.settings.testing') : testLabel || t('admin.settings.test')}
             </button>
           )}
           {onSave && (
@@ -76,7 +79,7 @@ function SettingsSection({ title, children, onSave, onTest, saveLabel = 'Save', 
               disabled={saving}
               className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Saving...' : saveLabel}
+              {saving ? t('admin.settings.saving') : saveLabel || t('admin.settings.save')}
             </button>
           )}
         </div>
@@ -94,6 +97,7 @@ function SettingsSection({ title, children, onSave, onTest, saveLabel = 'Save', 
 
 /* ───────── API Keys Tab ───────── */
 function ApiKeysTab() {
+  const { t } = useTranslation();
   const [keys, setKeys] = useState({
     shelly: '',
     shellyServerId: '',
@@ -280,7 +284,7 @@ function ApiKeysTab() {
     <div className="space-y-5">
       {/* Shelly Cloud */}
       <SettingsSection
-        title="Shelly Cloud"
+        title={t('admin.settings.shellyCloud')}
         onSave={saveShelly}
         onTest={testShelly}
         saving={shellyState.saving}
@@ -291,7 +295,7 @@ function ApiKeysTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Shelly Auth Key
+              {t('admin.settings.shellyAuthKey')}
             </label>
             <input
               type="password"
@@ -303,7 +307,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Shelly Server ID
+              {t('admin.settings.shellyServerId')}
             </label>
             <input
               type="text"
@@ -318,7 +322,7 @@ function ApiKeysTab() {
 
       {/* Nord Pool */}
       <SettingsSection
-        title="Nord Pool"
+        title={t('admin.settings.nordPool')}
         onSave={saveNordPool}
         onTest={testNordPool}
         saving={nordPoolState.saving}
@@ -329,7 +333,7 @@ function ApiKeysTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nord Pool API Key
+              {t('admin.settings.nordPoolApiKey')}
             </label>
             <input
               type="password"
@@ -341,7 +345,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price Area
+              {t('admin.settings.priceArea')}
             </label>
             <select
               name="nordPoolArea"
@@ -363,7 +367,7 @@ function ApiKeysTab() {
 
       {/* OpenWeather */}
       <SettingsSection
-        title="OpenWeatherMap"
+        title={t('admin.settings.openWeather')}
         onSave={saveWeather}
         onTest={testWeather}
         saving={weatherState.saving}
@@ -374,7 +378,7 @@ function ApiKeysTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              API Key
+              {t('admin.settings.apiKey')}
             </label>
             <input
               type="password"
@@ -386,7 +390,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Units
+              {t('admin.settings.units')}
             </label>
             <select
               name="openWeatherUnits"
@@ -394,13 +398,13 @@ function ApiKeysTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="metric">Metric (°C, m/s)</option>
-              <option value="imperial">Imperial (°F, mph)</option>
+              <option value="metric">{t('admin.settings.metric')}</option>
+              <option value="imperial">{t('admin.settings.imperial')}</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Latitude
+              {t('admin.settings.latitude')}
             </label>
             <input
               type="text"
@@ -412,7 +416,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Longitude
+              {t('admin.settings.longitude')}
             </label>
             <input
               type="text"
@@ -427,7 +431,7 @@ function ApiKeysTab() {
 
       {/* AI Configuration */}
       <SettingsSection
-        title="AI / Voice Assistant"
+        title={t('admin.settings.aiVoice')}
         onSave={saveAI}
         onTest={testAI}
         saving={aiState.saving}
@@ -438,23 +442,23 @@ function ApiKeysTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              AI API Endpoint
+              {t('admin.settings.aiEndpoint')}
             </label>
             <input
               type="text"
               name="aiEndpoint"
               value={keys.aiEndpoint}
               onChange={handleChange}
-              placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1"
+              placeholder={t('admin.settings.aiEndpointPlaceholder')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Base URL for OpenAI-compatible API (e.g., DashScope for Qwen models)
+              {t('admin.settings.aiEndpointHelp')}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              AI API Key
+              {t('admin.settings.aiApiKey')}
             </label>
             <input
               type="password"
@@ -464,12 +468,12 @@ function ApiKeysTab() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
-              For Qwen models, use your DashScope API key from console.aliyun.com
+              {t('admin.settings.aiApiKeyHelp')}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              AI Model
+              {t('admin.settings.aiModel')}
             </label>
             <select
               name="aiModel"
@@ -482,7 +486,7 @@ function ApiKeysTab() {
               <option value="qwen3.7-flash">Qwen 3.7 Flash (Fastest)</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Voice assistant will use this model for natural language conversations
+              {t('admin.settings.aiModelHelp')}
             </p>
           </div>
         </div>
@@ -490,11 +494,11 @@ function ApiKeysTab() {
 
       {/* SMTP Configuration */}
       <SettingsSection
-        title="Email (SMTP)"
+        title={t('admin.settings.emailSmtp')}
         onSave={saveSMTP}
         onTest={testSMTP}
-        saveLabel="Save SMTP"
-        testLabel="Test Email"
+        saveLabel={t('admin.settings.saveSmtp')}
+        testLabel={t('admin.settings.testEmail')}
         saving={smtpState.saving}
         testing={smtpState.testing}
         message={smtpState.message}
@@ -503,7 +507,7 @@ function ApiKeysTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              SMTP Host
+              {t('admin.settings.smtpHost')}
             </label>
             <input
               type="text"
@@ -516,7 +520,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              SMTP Port
+              {t('admin.settings.smtpPort')}
             </label>
             <input
               type="text"
@@ -529,7 +533,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Use SSL/TLS
+              {t('admin.settings.useSsl')}
             </label>
             <select
               name="smtpSecure"
@@ -537,13 +541,13 @@ function ApiKeysTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="false">No</option>
-              <option value="true">Yes</option>
+              <option value="false">{t('admin.settings.no')}</option>
+              <option value="true">{t('admin.settings.yes')}</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              From Email
+              {t('admin.settings.fromEmail')}
             </label>
             <input
               type="email"
@@ -556,7 +560,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              SMTP Username
+              {t('admin.settings.smtpUsername')}
             </label>
             <input
               type="text"
@@ -568,7 +572,7 @@ function ApiKeysTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              SMTP Password
+              {t('admin.settings.smtpPassword')}
             </label>
             <input
               type="password"
@@ -586,6 +590,7 @@ function ApiKeysTab() {
 
 /* ───────── Device Mapping Tab ───────── */
 function DeviceMappingTab() {
+  const { t } = useTranslation();
   const [rooms, setRooms] = useState([]);
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -640,12 +645,12 @@ function DeviceMappingTab() {
   };
 
   if (loading) {
-    return <p className="text-sm text-gray-500">Loading rooms and devices...</p>;
+    return <p className="text-sm text-gray-500">{t('admin.settings.loadingRoomsDevices')}</p>;
   }
 
   return (
     <SettingsSection
-      title="Device Mapping"
+      title={t('admin.settings.deviceMapping')}
       onSave={handleSave}
       saving={saving}
       message={message}
@@ -656,13 +661,13 @@ function DeviceMappingTab() {
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-2 font-semibold text-gray-700 text-xs">
-                Room Name
+                {t('admin.settings.roomName')}
               </th>
               <th className="text-left px-4 py-2 font-semibold text-gray-700 text-xs">
-                Shelly Device
+                {t('admin.settings.shellyDevice')}
               </th>
               <th className="text-left px-4 py-2 font-semibold text-gray-700 text-xs">
-                Thermal Capacity
+                {t('admin.settings.thermalCapacity')}
               </th>
             </tr>
           </thead>
@@ -670,7 +675,7 @@ function DeviceMappingTab() {
             {rooms.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-6 text-center text-gray-500 text-sm">
-                  No rooms found.
+                  {t('admin.settings.noRoomsFound')}
                 </td>
               </tr>
             ) : (
@@ -687,7 +692,7 @@ function DeviceMappingTab() {
                       }
                       className="w-full max-w-xs px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">-- Select Device --</option>
+                      <option value="">{t('admin.settings.selectDevice')}</option>
                       {devices.map((dev) => (
                         <option key={dev._id || dev.id} value={dev._id || dev.id}>
                           {dev.name} ({dev.deviceId})
@@ -710,6 +715,7 @@ function DeviceMappingTab() {
 
 /* ───────── System Settings Tab ───────── */
 function SystemSettingsTab() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState({
     timezone: 'Europe/Helsinki',
     language: 'en',
@@ -753,10 +759,10 @@ function SystemSettingsTab() {
         currency: settings.currency,
         temperatureUnit: settings.temperatureUnit,
       });
-      setGeneralState({ saving: false, message: 'General settings saved' });
+      setGeneralState({ saving: false, message: t('admin.settings.generalSettingsSaved') });
       clearMessage(setGeneralState);
     } catch (err) {
-      setGeneralState({ saving: false, error: err.response?.data?.message || 'Failed to save' });
+      setGeneralState({ saving: false, error: err.response?.data?.message || t('admin.settings.failedToSave') });
     }
   };
 
@@ -767,10 +773,10 @@ function SystemSettingsTab() {
         priceThreshold: settings.priceThreshold,
         ecoModeEnabled: settings.ecoModeEnabled,
       });
-      setOptimizationState({ saving: false, message: 'Optimization settings saved' });
+      setOptimizationState({ saving: false, message: t('admin.settings.optimizationSettingsSaved') });
       clearMessage(setOptimizationState);
     } catch (err) {
-      setOptimizationState({ saving: false, error: err.response?.data?.message || 'Failed to save' });
+      setOptimizationState({ saving: false, error: err.response?.data?.message || t('admin.settings.failedToSave') });
     }
   };
 
@@ -780,10 +786,10 @@ function SystemSettingsTab() {
       await api.put('/settings/system', {
         notificationsEnabled: settings.notificationsEnabled,
       });
-      setNotificationsState({ saving: false, message: 'Notification settings saved' });
+      setNotificationsState({ saving: false, message: t('admin.settings.notificationSettingsSaved') });
       clearMessage(setNotificationsState);
     } catch (err) {
-      setNotificationsState({ saving: false, error: err.response?.data?.message || 'Failed to save' });
+      setNotificationsState({ saving: false, error: err.response?.data?.message || t('admin.settings.failedToSave') });
     }
   };
 
@@ -791,7 +797,7 @@ function SystemSettingsTab() {
     <div className="space-y-5">
       {/* General Settings */}
       <SettingsSection
-        title="General"
+        title={t('admin.settings.general')}
         onSave={saveGeneral}
         saving={generalState.saving}
         message={generalState.message}
@@ -800,7 +806,7 @@ function SystemSettingsTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Timezone
+              {t('admin.settings.timezone')}
             </label>
             <select
               name="timezone"
@@ -817,7 +823,7 @@ function SystemSettingsTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Default Language
+              {t('admin.settings.languageLabel')}
             </label>
             <select
               name="language"
@@ -832,7 +838,7 @@ function SystemSettingsTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Currency
+              {t('admin.settings.currency')}
             </label>
             <select
               name="currency"
@@ -848,7 +854,7 @@ function SystemSettingsTab() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Temperature Unit
+              {t('admin.settings.tempUnit')}
             </label>
             <select
               name="temperatureUnit"
@@ -856,8 +862,8 @@ function SystemSettingsTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="celsius">Celsius (°C)</option>
-              <option value="fahrenheit">Fahrenheit (°F)</option>
+              <option value="celsius">{t('admin.settings.celsius')} (°C)</option>
+              <option value="fahrenheit">{t('admin.settings.fahrenheit')} (°F)</option>
             </select>
           </div>
         </div>
@@ -865,7 +871,7 @@ function SystemSettingsTab() {
 
       {/* Optimization Settings */}
       <SettingsSection
-        title="Optimization"
+        title={t('admin.settings.optimization')}
         onSave={saveOptimization}
         saving={optimizationState.saving}
         message={optimizationState.message}
@@ -874,7 +880,7 @@ function SystemSettingsTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price Alert Threshold (€/kWh)
+              {t('admin.settings.priceThreshold')} (€/kWh)
             </label>
             <input
               type="number"
@@ -886,12 +892,12 @@ function SystemSettingsTab() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Alert when price exceeds this threshold (0 = disabled)
+              {t('admin.settings.priceThresholdHelp')}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Eco Mode
+              {t('admin.settings.ecoMode')}
             </label>
             <select
               name="ecoModeEnabled"
@@ -899,11 +905,11 @@ function SystemSettingsTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="true">{t('admin.settings.enabled')}</option>
+              <option value="false">{t('admin.settings.disabled')}</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Allow energy-saving optimizations
+              {t('admin.settings.ecoModeHelp')}
             </p>
           </div>
         </div>
@@ -911,7 +917,7 @@ function SystemSettingsTab() {
 
       {/* Notifications */}
       <SettingsSection
-        title="Notifications"
+        title={t('admin.settings.notifications')}
         onSave={saveNotifications}
         saving={notificationsState.saving}
         message={notificationsState.message}
@@ -920,7 +926,7 @@ function SystemSettingsTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email Notifications
+              {t('admin.settings.notificationsEnabled')}
             </label>
             <select
               name="notificationsEnabled"
@@ -928,11 +934,11 @@ function SystemSettingsTab() {
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
+              <option value="true">{t('admin.settings.enabled')}</option>
+              <option value="false">{t('admin.settings.disabled')}</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Send booking confirmations and alerts via email
+              {t('admin.settings.notificationsHelp')}
             </p>
           </div>
         </div>

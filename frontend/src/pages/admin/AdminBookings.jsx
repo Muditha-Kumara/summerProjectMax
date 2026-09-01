@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import api from '../../services/api';
 
 const AdminBookings = () => {
+  const { t } = useTranslation();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -121,12 +123,12 @@ const AdminBookings = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Booking Management</h1>
+        <h1 className="text-3xl font-bold text-gray-800">{t('admin.bookings.title')}</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
         >
-          {showForm ? 'Cancel' : '+ New Booking'}
+          {showForm ? t('admin.bookings.cancel') : t('admin.bookings.newBooking')}
         </button>
       </div>
 
@@ -140,13 +142,13 @@ const AdminBookings = () => {
       
       {showForm && (
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4">Create New Booking</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('admin.bookings.createForm')}</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Guest Name *
+                  {t('admin.bookings.guestName')} *
                 </label>
                 <input
                   type="text"
@@ -161,7 +163,7 @@ const AdminBookings = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Guest Email *
+                  {t('admin.bookings.guestEmail')} *
                 </label>
                 <input
                   type="email"
@@ -176,7 +178,7 @@ const AdminBookings = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-in Date *
+                  {t('admin.bookings.checkInDate')} *
                 </label>
                 <input
                   type="datetime-local"
@@ -190,7 +192,7 @@ const AdminBookings = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Check-out Date *
+                  {t('admin.bookings.checkOutDate')} *
                 </label>
                 <input
                   type="datetime-local"
@@ -204,7 +206,7 @@ const AdminBookings = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Preferred Temperature (°C)
+                  {t('admin.bookings.preferredTemp')}
                 </label>
                 <input
                   type="number"
@@ -225,14 +227,14 @@ const AdminBookings = () => {
                 disabled={submitting}
                 className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
               >
-                {submitting ? 'Creating...' : 'Create Booking'}
+                {submitting ? t('admin.bookings.creating') : t('admin.bookings.createBooking')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Cancel
+                {t('admin.bookings.cancel')}
               </button>
             </div>
           </form>
@@ -241,26 +243,26 @@ const AdminBookings = () => {
 
       <div className="bg-white rounded-xl shadow-md overflow-hidden">
         <div className="p-6 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-700">All Bookings</h3>
+          <h3 className="text-lg font-semibold text-gray-700">{t('admin.bookings.allBookings')}</h3>
         </div>
 
         {loading ? (
-          <div className="p-6 text-center text-gray-500">Loading bookings...</div>
+          <div className="p-6 text-center text-gray-500">{t('admin.bookings.loadingBookings')}</div>
         ) : bookings.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">No bookings found</div>
+          <div className="p-6 text-center text-gray-500">{t('admin.bookings.noBookings')}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PIN</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temp</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.guest')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.email')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.checkIn')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.checkOut')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.pin')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.temp')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.status')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('admin.bookings.actions')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -292,10 +294,10 @@ const AdminBookings = () => {
                         onChange={(e) => handleStatusChange(booking.id, e.target.value)}
                         className={`px-3 py-1 text-xs font-semibold rounded ${getStatusColor(booking.status)}`}
                       >
-                        <option value="pending">Pending</option>
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="pending">{t('admin.bookings.pending')}</option>
+                        <option value="active">{t('admin.bookings.active')}</option>
+                        <option value="completed">{t('admin.bookings.completed')}</option>
+                        <option value="cancelled">{t('admin.bookings.cancelled')}</option>
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -303,7 +305,7 @@ const AdminBookings = () => {
                         onClick={() => handleDelete(booking.id)}
                         className="text-red-600 hover:text-red-800 font-medium"
                       >
-                        Delete
+                        {t('admin.bookings.delete')}
                       </button>
                     </td>
                   </tr>
