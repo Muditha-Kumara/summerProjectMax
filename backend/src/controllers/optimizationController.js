@@ -112,25 +112,24 @@ class OptimizationController {
     }
   }
 
-  // Get spot prices
+  // Get spot prices (today + tomorrow, for the dashboard chart)
   async getSpotPrices(req, res) {
     try {
-      const { hours = 24 } = req.query;
+      let result = await NordPoolService.getTodayAndTomorrow();
 
-      let forecast = await NordPoolService.getForecast(parseInt(hours));
-
-      // If no future prices are stored locally, fetch fresh data from the
-      // internet (spot-hinta.fi / Nord Pool) and save it in the database.
-      if (!forecast.prices || forecast.prices.length === 0) {
+      // If no prices are stored locally for today/tomorrow, fetch fresh data
+      // from the internet (spot-hinta.fi / Nord Pool) and save it in the
+      // database, then read again.
+      if (!result.prices || result.prices.length === 0) {
         const fetchResult = await NordPoolService.fetchSpotPrices(48);
         if (fetchResult.success) {
-          forecast = await NordPoolService.getForecast(parseInt(hours));
+          result = await NordPoolService.getTodayAndTomorrow();
         }
       }
 
       return res.json({
-        success: forecast.success,
-        prices: forecast.prices
+        success: result.success,
+        prices: result.prices
       });
     } catch (error) {
       logger.error('Get spot prices error', error);

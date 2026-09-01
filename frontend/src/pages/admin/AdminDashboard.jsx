@@ -32,7 +32,7 @@ export default function AdminDashboard() {
     try {
       const [roomsRes, pricesRes, bookingsRes] = await Promise.allSettled([
         api.get('/rooms'),
-        api.get('/optimization/spot-prices?hours=24'),
+        api.get('/optimization/spot-prices?hours=48'),
         api.get('/bookings/active'),
       ]);
 
@@ -49,6 +49,7 @@ export default function AdminDashboard() {
       if (pricesRes.status === 'fulfilled' && pricesRes.value.data) {
         const prices = pricesRes.value.data.prices || [];
         setSpotPrices(prices.map((p, i) => ({
+          timestamp: p.timestamp,
           hour: new Date(p.timestamp).getHours(),
           price: p.price,
           heating: i % 3 === 0, // Simulate heating schedule
@@ -188,7 +189,7 @@ export default function AdminDashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('admin.dashboard.spotPricesToday')}</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('admin.dashboard.spotPrices')}</h2>
           <SpotPriceChart data={spotPrices} />
         </section>
         <section>

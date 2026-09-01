@@ -208,13 +208,33 @@ class NordPoolService {
     };
   }
 
-  async getForecast(hours = 24) {
-    const forecast = await SpotPrice.findForecast(hours, this.area);
+  async getForecast(hours = 24, area = this.area) {
+    const forecast = await SpotPrice.findForecast(hours, area);
     
     return {
       success: true,
       prices: forecast
     };
+  }
+
+  /**
+   * Return hourly prices covering today and tomorrow (local calendar days),
+   * including hours already passed today. Used by the dashboard chart's
+   * Today/Tomorrow toggle.
+   *
+   * The window is intentionally generous (server runs in UTC, the browser may
+   * be several hours ahead/behind) so the client always receives every row it
+   * needs to bucket by its own local calendar day.
+   */
+  async getTodayAndTomorrow() {
+    const now = new Date();
+    const DAY = 24 * 60 * 60 * 1000;
+    // Cover up to ±14h of timezone offset relative to the server's UTC day.
+    const start = new Date(now.getTime() - 2 * DAY);
+    const end = new Date(now.getTime() + 3 * DAY);
+
+    const rows = await SpotPrice.findByDateRange(start, end, this.area);
+    return { success: true, prices: rows };
   }
 
   async getCheapestHours(hours = 24, limit = 6) {

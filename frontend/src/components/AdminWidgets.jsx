@@ -81,17 +81,66 @@ export function RoomOverviewGrid({ rooms = [] }) {
 }
 
 /* ───────── Spot Price Chart ───────── */
+const dateKey = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export function SpotPriceChart({ data = [] }) {
   const { t } = useTranslation();
-  if (!data.length)
+  const [day, setDay] = useState('today');
+
+  const now = new Date();
+  const todayKey = dateKey(now);
+  const tomorrowKey = dateKey(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+
+  // Bucket each price point by its local calendar date (fallback: today,
+  // for legacy data without timestamps).
+  const withDates = data.map((d) => ({
+    ...d,
+    dateKey: d.timestamp ? dateKey(new Date(d.timestamp)) : todayKey,
+  }));
+  const filtered = withDates.filter((d) =>
+    d.dateKey === (day === 'tomorrow' ? tomorrowKey : todayKey)
+  );
+
+  const title =
+    day === 'tomorrow'
+      ? t('admin.widgets.spotPricesTomorrow')
+      : t('admin.widgets.spotPricesToday');
+
+  const toggle = (
+    <div className="flex rounded-lg border border-gray-300 overflow-hidden text-xs font-semibold shrink-0">
+      {['today', 'tomorrow'].map((opt) => (
+        <button
+          key={opt}
+          onClick={() => setDay(opt)}
+          className={`px-3 py-1.5 transition-colors ${
+            day === opt
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          {t(`admin.widgets.${opt}`)}
+        </button>
+      ))}
+    </div>
+  );
+
+  const header = (
+    <div className="flex items-center justify-between gap-2 mb-3">
+      <h3 className="font-semibold text-gray-900">{title}</h3>
+      {toggle}
+    </div>
+  );
+
+  if (!filtered.length)
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">{t('admin.widgets.spotPricesToday')}</h3>
+        {header}
         <p className="text-gray-500 text-sm">{t('admin.widgets.noPriceData')}</p>
       </div>
     );
 
-  const chartData = data.map((d) => ({
+  const chartData = filtered.map((d) => ({
     hour: d.hour,
     price: +(d.price * 100).toFixed(2), // convert to cents
     heating: d.heating ? d.price * 100 : 0,
@@ -99,7 +148,7 @@ export function SpotPriceChart({ data = [] }) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="font-semibold text-gray-900 mb-3">{t('admin.widgets.spotPricesToday')}</h3>
+      {header}
       <ResponsiveContainer width="100%" height={260}>
         <ComposedChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" />

@@ -94,13 +94,14 @@ class SpotPrice {
     return result.rows[0];
   }
 
-  static async findByDateRange(startDate, endDate) {
+  static async findByDateRange(startDate, endDate, area = 'FI') {
     const result = await db.query(
       `SELECT * FROM spot_prices 
        WHERE timestamp >= $1 
        AND timestamp <= $2
+       AND area = $3
        ORDER BY timestamp ASC`,
-      [startDate, endDate]
+      [startDate, endDate, area]
     );
     return result.rows;
   }
