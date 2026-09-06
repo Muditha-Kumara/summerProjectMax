@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 ARG VITE_API_URL=/api/v1
 ENV VITE_API_URL=$VITE_API_URL
+# vite build exhausts Node's default old-space heap on the 4 GiB demo VM
+# (Azure B2ats_v2) -> "Reached heap limit". Give the builder a bigger cap.
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 WORKDIR /app
 

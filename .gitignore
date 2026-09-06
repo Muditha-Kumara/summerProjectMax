@@ -49,7 +49,9 @@ frontend/dist/
 
 # Terraform (contains secrets in state — never commit)
 infra/.terraform/
+infra/azure/.terraform/
 infra/.terraform.lock.hcl
+infra/azure/.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars
@@ -59,3 +61,4 @@ crash.log
 # Local secret env files
 infra/myenv.sh
 myenv.sh
+infra/azure/.vmpass
