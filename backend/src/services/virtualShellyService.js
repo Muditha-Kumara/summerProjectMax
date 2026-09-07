@@ -23,6 +23,13 @@ class VirtualShellyService {
     this.heatGainRate = 0.1; // °C per minute when heating on (for floor heating)
     this.heatLossRate = 0.02; // °C per minute per degree difference from outdoor
     this.outdoorTemp = 5; // Default outdoor temperature (°C)
+
+    // Physical bounds for simulated room sensors (°C).
+    // A room can never cool below outdoor temp, and heating stops at a sane max
+    // (real thermostats cut out at target; this prevents runaway values like 150°C
+    // when a safeguard keeps a relay permanently ON).
+    this.defaultMaxTemp = 30; // typical room air sensor
+    this.thermostatHysteresis = 0.5; // °C below setpoint before reheating
     
     // Initialize default devices
     this.initializeDefaultDevices();
@@ -47,7 +54,9 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: true
+        isCritical: true,
+        maxTemp: 28,
+        targetTemp: 20.0
       },
       {
         deviceId: 'shelly-plus-1pm-hallway',
@@ -58,7 +67,9 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: false
+        isCritical: false,
+        maxTemp: 28,
+        targetTemp: 20.0
       },
       {
         deviceId: 'shelly-plus-1pm-bedroom',
@@ -69,7 +80,9 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: false
+        isCritical: false,
+        maxTemp: 28,
+        targetTemp: 20.0
       },
       {
         deviceId: 'shelly-plus-1pm-living',
@@ -80,7 +93,9 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: false
+        isCritical: false,
+        maxTemp: 28,
+        targetTemp: 21.0
       },
       {
         deviceId: 'shelly-plus-1pm-storage',
@@ -91,7 +106,9 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: false
+        isCritical: false,
+        maxTemp: 25,
+        targetTemp: 15.0
       },
       {
         deviceId: 'shelly-pro-4pm-water',
@@ -102,7 +119,10 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: false
+        isCritical: false,
+        // Boiler water temp, realistically capped (element thermostat cuts ~65°C)
+        maxTemp: 65,
+        targetTemp: 55.0
       },
       {
         deviceId: 'shelly-pro-1pm-heatpump',
@@ -113,13 +133,18 @@ class VirtualShellyService {
         relayState: false,
         power: 0,
         totalEnergy: 0,
-        isCritical: true
+        isCritical: true,
+        maxTemp: 30,
+        targetTemp: 21.0
       }
     ];
 
     defaultDevices.forEach(device => {
       this.devices.set(device.deviceId, {
         ...device,
+        // The thermostat is in control by default so rooms approach and hold
+        // their setpoint instead of running away when a relay stays ON.
+        thermostatActive: device.targetTemp != null,
         lastUpdate: Date.now()
       });
     });
@@ -144,7 +169,32 @@ class VirtualShellyService {
     
     this.devices.forEach((device, deviceId) => {
       const elapsedMinutes = (now - device.lastUpdate) / 60000;
-      
+
+      // Physical bounds: a device can never cool below outdoor temperature
+      // and never heat beyond its sensor cap, even if a relay gets stuck ON.
+      const maxTemp = device.maxTemp ?? this.defaultMaxTemp;
+      const minTemp = Math.min(this.outdoorTemp, maxTemp);
+
+      // Thermostat behavior: heat toward the room's target temperature, then hold
+      // it within a small hysteresis band. Falls back to the absolute sensor cap
+      // when no setpoint is configured for this device.
+      const setpoint = device.targetTemp != null
+        ? Math.min(device.targetTemp, maxTemp)
+        : null;
+      const heatStopAt = setpoint ?? maxTemp;
+
+      if (device.relayState && device.thermostatActive && device.temperature >= heatStopAt) {
+        // Target reached - thermostat cuts out heating (like a real one)
+        device.relayState = false;
+        device.power = 0;
+        logger.debug(`Virtual device ${deviceId} (${device.name}) reached ${heatStopAt}°C setpoint - heating cut out`);
+      } else if (!device.relayState && setpoint != null && device.thermostatActive &&
+                 device.temperature <= setpoint - this.thermostatHysteresis) {
+        // Temperature drifted below the hysteresis band - call for heat again
+        device.relayState = true;
+        logger.debug(`Virtual device ${deviceId} (${device.name}) dropped to ${device.temperature.toFixed(1)}°C - thermostat calling for heat`);
+      }
+
       // Calculate temperature change
       let tempChange = 0;
       
@@ -171,8 +221,8 @@ class VirtualShellyService {
         device.power = 0;
       }
       
-      // Apply temperature change
-      device.temperature += tempChange;
+      // Apply temperature change, clamped to physically possible bounds
+      device.temperature = Math.max(minTemp, Math.min(maxTemp, device.temperature + tempChange));
       
       // Simulate humidity changes (slight increase when heating, decrease when off)
       if (device.humidity > 0) {
@@ -190,6 +240,29 @@ class VirtualShellyService {
   setOutdoorTemperature(temp) {
     this.outdoorTemp = temp;
     logger.info(`Virtual outdoor temperature set to ${temp}°C`);
+  }
+
+  /**
+   * Set the thermostat setpoint for a virtual device.
+   * The simulation heats toward this target and holds it within a hysteresis band.
+   */
+  setTargetTemperature(deviceId, targetTemp) {
+    const device = this.devices.get(deviceId);
+    if (!device) {
+      return false;
+    }
+    const changed = device.targetTemp !== targetTemp;
+    device.targetTemp = targetTemp;
+    // A setpoint sync means the thermostat is in control again (e.g. after a
+    // safeguard or scheduler left the relay manually on/off)
+    device.thermostatActive = true;
+    if (device.temperature < Math.min(targetTemp, device.maxTemp ?? this.defaultMaxTemp)) {
+      device.relayState = true; // below target - start heating right away
+    }
+    if (changed) {
+      logger.info(`Virtual device ${deviceId} (${device.name}) thermostat setpoint set to ${targetTemp}°C`);
+    }
+    return true;
   }
 
   /**
@@ -268,6 +341,8 @@ class VirtualShellyService {
 
     const newState = turn === 'on';
     device.relayState = newState;
+    // A manual relay command hands control to/from the simulated thermostat
+    device.thermostatActive = newState;
     device.lastUpdate = Date.now();
 
     logger.info(`Virtual device ${deviceId} (${device.name}) relay ${channel} turned ${newState ? 'ON' : 'OFF'}`);
@@ -383,6 +458,7 @@ class VirtualShellyService {
       deviceId,
       name: device.name,
       temperature: parseFloat(device.temperature.toFixed(1)),
+      targetTemp: device.targetTemp ?? null,
       humidity: parseFloat(device.humidity.toFixed(1)),
       relayState: device.relayState,
       power: device.power,
@@ -401,6 +477,8 @@ class VirtualShellyService {
       device.relayState = false;
       device.power = 0;
       device.totalEnergy = 0;
+      // Keep the thermostat in control after a reset so the room returns to setpoint
+      device.thermostatActive = device.targetTemp != null;
       device.lastUpdate = Date.now();
       logger.info(`Virtual device ${deviceId} reset to initial state`);
     }

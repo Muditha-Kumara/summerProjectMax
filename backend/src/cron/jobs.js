@@ -82,6 +82,10 @@ class CronJobs {
 
         // Fetch real data from Shelly if device ID is configured
         if (room.shelly_device_id) {
+          // Keep the (virtual) thermostat setpoint in sync with the room target,
+          // so the current temperature always approaches target_temp
+          await ShellyService.setTargetTemperature(room.shelly_device_id, room.target_temp);
+
           const tempData = await ShellyService.getTemperature(room.shelly_device_id);
           if (tempData.success) currentTemp = tempData.temperature;
 

@@ -91,6 +91,18 @@ class ShellyService {
     }
   }
 
+  /**
+   * Sync a room's thermostat setpoint to the device.
+   * In virtual mode the simulator heats toward this target; with real hardware
+   * the physical thermostat handles it, so this is a no-op there.
+   */
+  async setTargetTemperature(deviceId, targetTemp) {
+    if (this.useVirtual) {
+      virtualShellyService.setTargetTemperature(deviceId, targetTemp);
+    }
+    return { success: true };
+  }
+
   async getDeviceList() {
     // Use virtual service if enabled
     if (this.useVirtual) {

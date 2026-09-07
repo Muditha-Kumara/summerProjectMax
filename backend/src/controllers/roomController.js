@@ -128,14 +128,10 @@ class RoomController {
 
       const updated = await Room.updateTemperature(id, room.current_temp, targetTemp);
 
-      // Control Shelly device
+      // Control Shelly device - hand the new setpoint to the thermostat so the
+      // room heats toward it and then holds (instead of a relay stuck permanently ON)
       if (room.shelly_device_id) {
-        const shouldHeat = room.current_temp < targetTemp;
-        await ShellyService.setRelayState(
-          room.shelly_device_id,
-          0,
-          shouldHeat ? 'on' : 'off'
-        );
+        await ShellyService.setTargetTemperature(room.shelly_device_id, targetTemp);
       }
 
       logger.info(`Room ${room.name} temperature updated to ${targetTemp}°C`);
