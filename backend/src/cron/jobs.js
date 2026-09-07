@@ -74,11 +74,12 @@ class CronJobs {
       const outdoorTemp = weather.success ? weather.data.temperature : null;
       const spotPrice = await NordPoolService.getCurrentPrice();
 
+      const recordedAt = new Date();
       for (const room of rooms) {
         let currentTemp = room.current_temp;
         let humidity = room.humidity;
         let relayState = false;
-        let energyConsumption = 0;
+        let powerW = 0; // instantaneous power in watts (Shelly meters)
 
         // Fetch real data from Shelly if device ID is configured
         if (room.shelly_device_id) {
@@ -93,7 +94,7 @@ class CronJobs {
           if (humidityData.success) humidity = humidityData.humidity;
 
           const powerData = await ShellyService.getPowerConsumption(room.shelly_device_id);
-          if (powerData.success) energyConsumption = powerData.power;
+          if (powerData.success) powerW = powerData.power || 0;
 
           const statusData = await ShellyService.getDeviceStatus(room.shelly_device_id);
           if (statusData.success && statusData.data?.device_status?.relays?.[0]) {
@@ -105,6 +106,16 @@ class CronJobs {
             await Room.updateTemperature(room.id, currentTemp, room.target_temp);
           }
         }
+
+        // energy_consumption must be the kWh actually consumed since the
+        // previous reading: watts x elapsed time (cron interval is 5 min,
+        // capped to [1, 30] min to survive delays/restarts). Storing raw
+        // watts here would inflate the energy charts by ~12000x.
+        let elapsedMin = 5;
+        const lastTs = await HistoricalData.findLatestTimestamp(room.id);
+        if (lastTs) elapsedMin = (recordedAt - new Date(lastTs)) / 60000;
+        elapsedMin = Math.max(1, Math.min(elapsedMin, 30));
+        const energyConsumption = (powerW / 1000) * (elapsedMin / 60);
 
         // Store historical data
         await HistoricalData.create({

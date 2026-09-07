@@ -4,83 +4,115 @@ import logger from '../utils/logger.js';
 import { runMigrations } from './migrate.js';
 
 /**
- * Generate ~10 days of realistic hourly energy-consumption history for every
- * room so that the Energy Consumption charts (dashboard total + /admin/energy
- * detail chart) have data immediately after seeding.
+ * Generate realistic HOURLY energy-consumption history for every room,
+ * covering the calendar month up to the current month in full (1st 00:00 UTC
+ * → now) so the Today / Week / Month / Year charts all have plausible data
+ * immediately after seeding.
  *
- * Idempotent: skipped when readings already cover a full week (7 distinct days
- * within the last 6 days).
+ * Magnitudes target a small electrically-heated house: roughly 10–18 kWh/day
+ * in total across all devices (≈300–500 kWh/month, ≈€10–20/day at spot).
+ *
+ * Re-seeds (after wiping the table) when existing data is missing, does not
+ * cover the current month, or contains implausible readings (a single hourly
+ * slot > 50 kWh means watts were stored as kWh — the old cron bug).
  */
 const seedEnergyHistory = async () => {
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
   const existing = await db.query(
-    `SELECT COUNT(DISTINCT date_trunc('day', timestamp))::int AS n
-     FROM historical_data
-     WHERE timestamp >= CURRENT_TIMESTAMP - INTERVAL '6 days'`
+    `SELECT COUNT(*)::int AS n,
+            MIN(timestamp) AS min_ts,
+            MAX(timestamp) AS max_ts,
+            MAX(energy_consumption) AS max_slot
+     FROM historical_data`
   );
-  if (existing.rows[0].n >= 7) {
-    logger.info('Energy history already covers a full week — skipping dummy data seed');
+  const row = existing.rows[0];
+  const coversMonth =
+    row.n > 0 &&
+    new Date(row.min_ts) <= monthStart &&
+    new Date(row.max_ts) >= new Date(now.getTime() - 6 * 3600 * 1000);
+  const plausible = row.n > 0 && parseFloat(row.max_slot || 0) <= 50;
+  if (coversMonth && plausible) {
+    logger.info('Energy history already covers the current month with plausible values — skipping dummy data seed');
     return;
+  }
+  if (row.n > 0) {
+    await db.query('DELETE FROM historical_data');
+    logger.info(`Cleared ${row.n} existing historical readings (implausible or incomplete coverage)`);
   }
 
   const roomsRes = await db.query('SELECT id, name FROM rooms ORDER BY id');
   const rooms = roomsRes.rows;
   if (!rooms.length) return;
 
-  // Rough hourly kWh profile per device type (index = hour of day, UTC)
-  const profileFor = (name) => {
-    const base = new Array(24).fill(0);
-    for (let h = 0; h < 24; h++) {
-      // Quiet at night, peaks in morning (7-9) and evening (17-21)
-      const morning = Math.exp(-((h - 8) ** 2) / 6);
-      const evening = Math.exp(-((h - 19) ** 2) / 8);
-      const night = h < 6 || h > 22 ? 0.25 : 1;
-      base[h] = night * (0.3 + morning + evening);
-    }
+  // Typical daily consumption (kWh/day) per device — realistic for a ~90 m²
+  // house with electric floor heating + a heat pump + a 3 kW boiler element.
+  const DAILY_KWH = {
+    Kodinhoitohuone: 1.6, // utility room: laundry, lighting, sockets
+    Eteinen: 0.6, // hallway: light floor cable
+    Makuuhuone: 1.1, // bedroom: night-setback heating
+    Olohuone: 2.2, // living room: main heating zone
+    Varasto: 0.1, // storage: barely heated
+    Lämminvesivaraaja: 3.2, // water heater: ~1 h of a 3 kW element per day
+    Ilmalämpöpumppu: 4.5 // heat pump: duty-cycled space heating
+  };
+
+  // Relative hourly shape (index = hour UTC): morning + evening peaks, quiet
+  // at night; boiler bursts overnight; heat pump runs more in cold hours.
+  const shapeFor = (name, h) => {
+    const morning = Math.exp(-((h - 8) ** 2) / 6);
+    const evening = Math.exp(-((h - 19) ** 2) / 8);
+    const night = h < 6 || h > 22 ? 0.25 : 1;
+    const base = night * (0.3 + morning + evening);
     switch (name) {
-      case 'Lämminvesivaraaja': // water heater: big bursts at night + midday
-        return base.map((v, h) => (h < 6 || h === 12 ? 1.8 + v : 0.2 + v * 0.3));
-      case 'Ilmalämpöpumppu': // heat pump: steady, higher in cold hours
-        return base.map((v, h) => 0.6 + v * 1.5 + (h < 7 || h > 21 ? 0.4 : 0));
-      case 'Varasto': // storage: mostly off
-        return base.map((v) => v * 0.1);
-      default: // living spaces
-        return base.map((v) => 0.15 + v * 0.8);
+      case 'Lämminvesivaraaja':
+        return h < 6 || h === 12 ? 1.8 + base : 0.2 + base * 0.3;
+      case 'Ilmalämpöpumppu':
+        return 0.6 + base * 1.5 + (h < 7 || h > 21 ? 0.4 : 0);
+      case 'Varasto':
+        return base * 0.1;
+      default:
+        return 0.15 + base * 0.8;
     }
   };
 
-  const DAYS = 10;
-  const now = new Date();
-  // Seed through the end of the current week (next Monday 00:00 UTC) so the
-  // week chart always shows a full Mon–Sun curve in demos.
-  const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  end.setUTCHours(0, 0, 0, 0);
-  end.setUTCDate(end.getUTCDate() - ((end.getUTCDay() + 6) % 7)); // back to Monday 00:00 UTC
-  const start = new Date(now.getTime() - DAYS * 24 * 60 * 60 * 1000);
-  start.setMinutes(0, 0, 0);
+  // Normalise each room's 24-hour shape so weights sum to 1 → kWh per hour
+  // = shape[h] × dailyKwh.
+  const shapes = {};
+  for (const room of rooms) {
+    const raw = new Array(24).fill(0).map((_, h) => shapeFor(room.name, h));
+    const sum = raw.reduce((a, b) => a + b, 0);
+    shapes[room.id] = raw.map((v) => v / sum);
+  }
+
+  // Hourly readings from the 1st of the current month up to (but not after)
+  // the current hour, so the "Today" chart fills naturally.
+  const start = new Date(monthStart);
+  const end = new Date(now);
+  end.setMinutes(0, 0, 0);
 
   const values = [];
   for (const room of rooms) {
-    const profile = profileFor(room.name);
-    let t = new Date(start);
+    const daily = DAILY_KWH[room.name] ?? 1.0;
     let day = 0;
-    while (t <= end) {
+    for (let t = new Date(start); t < end; t = new Date(t.getTime() + 3600 * 1000)) {
       const h = t.getUTCHours();
-      // Day-to-day variation + noise; seed is deterministic-ish via sin
-      const dayFactor = 0.8 + 0.4 * Math.abs(Math.sin((day + room.id) * 1.7));
-      const noise = 0.85 + 0.3 * Math.abs(Math.sin((t.getTime() / 3.6e6 + room.id * 13) * 2.3));
-      const energy = Math.max(0, profile[h] * dayFactor * noise); // kW-ish rate
-      const energyKwh = energy / 4; // kWh consumed in this 15-min slot
-      const temp = 20 + 2 * Math.sin((h - 14) / 24 * 2 * Math.PI) + (Math.random() - 0.5);
+      if (h === 0) day++;
+      // Deterministic day-to-day variation + noise (±20%)
+      const dayFactor = 0.85 + 0.3 * Math.abs(Math.sin((day + room.id) * 1.7));
+      const noise = 0.9 + 0.2 * Math.abs(Math.sin((t.getTime() / 3.6e6 + room.id * 13) * 2.3));
+      const energyKwh = shapes[room.id][h] * daily * dayFactor * noise;
+      const temp = 20 + 2 * Math.sin(((h - 14) / 24) * 2 * Math.PI) + (Math.random() - 0.5);
       const humidity = 45 + 8 * Math.sin(day / 3 + room.id) + (Math.random() - 0.5) * 4;
-      const outdoor = 3 + 7 * Math.sin((h - 15) / 24 * 2 * Math.PI) + (Math.random() - 0.5) * 2;
-      // Spot price: cheap at night, pricier morning/evening (EUR/kWh)
-      const spot = 0.04 + 0.09 * (profile[h] / 1.3) + (Math.random() - 0.5) * 0.02;
+      // Finnish early-autumn outdoors: ~6 °C daily mean, ±6 °C swing
+      const outdoor = 6 + 6 * Math.sin(((h - 15) / 24) * 2 * Math.PI) + (Math.random() - 0.5) * 2;
+      // FI spot price, EUR/kWh: cheap overnight, peaks morning/evening
+      const spot = 0.05 + 0.1 * (shapes[room.id][h] * 24) + (Math.random() - 0.5) * 0.015;
       const target = room.name === 'Lämminvesivaraaja' ? 55 : room.name === 'Varasto' ? 15 : 21;
       values.push(
-        `(${room.id}, '${t.toISOString().replace("T", " ").replace("Z", "")}', ${temp.toFixed(2)}, ${target.toFixed(2)}, ${energyKwh.toFixed(4)}, ${humidity.toFixed(1)}, ${outdoor.toFixed(1)}, ${Math.max(0.01, spot).toFixed(4)}, ${energy > 0.3})`
+        `(${room.id}, '${t.toISOString().replace("T", " ").replace("Z", "")}', ${temp.toFixed(2)}, ${target.toFixed(2)}, ${energyKwh.toFixed(4)}, ${humidity.toFixed(1)}, ${outdoor.toFixed(1)}, ${Math.max(0.01, spot).toFixed(4)}, ${energyKwh > 0.15})`
       );
-      t = new Date(t.getTime() + 15 * 60 * 1000); // 15-min readings
-      if (t.getUTCHours() === 0 && t.getUTCMinutes() === 0) day++;
     }
   }
 
@@ -94,7 +126,9 @@ const seedEnergyHistory = async () => {
        VALUES ${slice}`
     );
   }
-  logger.info(`Seeded ${values.length} historical energy readings (${DAYS} days) for ${rooms.length} rooms`);
+  logger.info(
+    `Seeded ${values.length} historical energy readings (${start.toISOString().slice(0, 10)} → ${end.toISOString().slice(0, 13)}:00 UTC) for ${rooms.length} rooms`
+  );
 };
 
 const seedData = async () => {

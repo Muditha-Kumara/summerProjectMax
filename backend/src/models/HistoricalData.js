@@ -12,6 +12,18 @@ class HistoricalData {
     return result.rows[0];
   }
 
+  /**
+   * Timestamp of the most recent reading for a room (used to convert
+   * instantaneous power into energy consumed between readings).
+   */
+  static async findLatestTimestamp(roomId) {
+    const result = await db.query(
+      'SELECT timestamp FROM historical_data WHERE room_id = $1 ORDER BY timestamp DESC LIMIT 1',
+      [roomId]
+    );
+    return result.rows[0] ? result.rows[0].timestamp : null;
+  }
+
   static async findByRoom(roomId, { limit = 100, offset = 0, startDate, endDate } = {}) {
     let query = 'SELECT * FROM historical_data WHERE room_id = $1';
     const params = [roomId];
