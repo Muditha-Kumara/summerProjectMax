@@ -94,9 +94,14 @@ router.get('/timeseries', async (req, res) => {
     const rooms = await Room.findAll();
     const roomMeta = rooms.map((r) => ({ id: r.id, name: r.name }));
 
+    // Viewer's UTC offset in minutes (e.g. +180 for EEST) so buckets align
+    // with the browser wall clock instead of server UTC.
+    const tzOffset = parseInt(req.query.tzOffset, 10) || 0;
+
     const timeseries = await costService.getTimeseries(
       new Date(startDate),
-      new Date(endDate)
+      new Date(endDate),
+      tzOffset
     );
 
     res.json({

@@ -123,6 +123,7 @@
     "avgPrice": "Medelpris",
     "byDevice": "Per rum",
     "timeseries": "Energiförbrukning över tid",
+    "timeAxis": "Tid",
     "spotPrice": "Spotpris",
     "usageBreakdown": "Förbrukningsfördelning",
     "roomEnergy": "Energi per rum",

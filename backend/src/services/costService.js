@@ -150,114 +150,167 @@ class CostService {
 
   /**
    * Get time-series cost/energy/price data for charting.
-   * Fills ALL time slots so the chart always has a complete axis.
-   * Day   → 24 hourly buckets.  Week/Month → daily buckets.  Year → monthly buckets.
+   * The FULL period is always returned — 24 hourly buckets for a day, Mon–Sun
+   * for a week, every day of the month, Jan–Dec for a year — so the X axis
+   * spans the complete range. Slots after the current one carry null values,
+   * which makes the chart lines stop at "now" while the axis stays complete.
+   * Day   → hourly buckets.  Week/Month → daily buckets.  Year → monthly buckets.
    * @param {Date} startDate - Start date
    * @param {Date} endDate - End date
+   * @param {number} [tzOffsetMinutes] - Viewer UTC offset in minutes (the
+   *   inverse of `new Date().getTimezoneOffset()`), so buckets align with the
+   *   browser's wall clock instead of the server's UTC clock.
    * @returns {Array} Timeseries data points
    */
-  async getTimeseries(startDate, endDate) {
+  async getTimeseries(startDate, endDate, tzOffsetMinutes = 0) {
     try {
       const Room = (await import('../models/Room.js')).default;
       const rooms = await Room.findAll();
       const rangeDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+      const offsetMs = (Number(tzOffsetMinutes) || 0) * 60 * 1000;
 
       const contract = await ElectricityContract.findActive();
 
-      // Decide bucket strategy
-      let generateSlots, slotLabel;
-      if (rangeDays <= 1) {
-        // Day: 24 hourly slots 0-23
-        generateSlots = () => {
-          const slots = [];
-          const base = new Date(startDate);
-          for (let h = 0; h < 24; h++) {
-            const slot = new Date(base);
-            slot.setHours(h, 0, 0, 0);
-            slots.push(slot);
-          }
-          return slots;
-        };
-        slotLabel = (d) => `${String(d.getHours()).padStart(2, '0')}:00`;
-      } else if (rangeDays <= 7) {
-        // Week: daily slots with day names (Mon–Sun)
-        generateSlots = () => {
-          const slots = [];
-          const cur = new Date(startDate);
-          while (cur < endDate) {
-            slots.push(new Date(cur));
-            cur.setDate(cur.getDate() + 1);
-          }
-          return slots;
-        };
-        slotLabel = (d) => {
-          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          return days[d.getDay()];
-        };
-      } else if (rangeDays <= 31) {
-        // Month: daily slots with day numbers (1–31)
-        generateSlots = () => {
-          const slots = [];
-          const cur = new Date(startDate);
-          while (cur < endDate) {
-            slots.push(new Date(cur));
-            cur.setDate(cur.getDate() + 1);
-          }
-          return slots;
-        };
-        slotLabel = (d) => String(d.getDate());
-      } else {
-        // Year: monthly slots
-        generateSlots = () => {
-          const slots = [];
-          const cur = new Date(startDate.getFullYear(), 0, 1);
-          const end = new Date(endDate);
-          while (cur < end) {
-            slots.push(new Date(cur));
-            cur.setMonth(cur.getMonth() + 1);
-          }
-          return slots;
-        };
-        slotLabel = (d) => {
-          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          return months[d.getMonth()];
-        };
+      // Shift helper: get the "local" wall-clock view of a UTC instant at the
+      // viewer's offset. UTC getters on the shifted date read the viewer's
+      // wall-clock fields regardless of the server's own timezone.
+      const local = (d) => new Date(d.getTime() + offsetMs);
+
+      // Bucket resolution: hour for day view, day for week/month, month for year
+      const unit = rangeDays <= 1 ? 'hour' : rangeDays <= 31 ? 'day' : 'month';
+
+      const floorToUnit = (d) => {
+        const l = new Date(d);
+        if (unit === 'hour') l.setUTCMinutes(0, 0, 0);
+        else if (unit === 'day') l.setUTCHours(0, 0, 0, 0);
+        else { l.setUTCDate(1); l.setUTCHours(0, 0, 0, 0); }
+        return l;
+      };
+      const addUnit = (d, n = 1) => {
+        const l = new Date(d);
+        if (unit === 'hour') l.setUTCHours(l.getUTCHours() + n);
+        else if (unit === 'day') l.setUTCDate(l.getUTCDate() + n);
+        else l.setUTCMonth(l.getUTCMonth() + n);
+        return l;
+      };
+
+      // Generate slot starts in "wall-clock space" (a Date whose UTC getters
+      // read the viewer's local fields). The client sends bare local date
+      // strings (YYYY-MM-DD) that parse to UTC-midnight, so startDate already
+      // reads the intended wall-clock start and must NOT be shifted again.
+      // Only real instants (now, DB timestamps) need the +offset shift.
+      // Always emit the FULL requested period (endDate is exclusive), so the
+      // X axis shows every hour/day/month. Slots beyond the current one are
+      // nulled out below → lines stop at "now", axis spans the whole period.
+      const lastWithDataSlot = floorToUnit(local(new Date()));
+      const startFloor = floorToUnit(new Date(startDate));
+      const endFloor = floorToUnit(new Date(endDate));
+      const slots = [];
+      let cur = startFloor;
+      while (cur < endFloor && slots.length < 400) {
+        slots.push(cur);
+        cur = addUnit(cur);
       }
+      if (slots.length === 0) slots.push(startFloor);
 
-      const slots = generateSlots();
+      const slotLabel = (d) => {
+        if (unit === 'hour') {
+          return `${String(d.getUTCHours()).padStart(2, '0')}:00`;
+        }
+        if (unit === 'day') {
+          if (rangeDays <= 7) {
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return `${days[d.getUTCDay()]} ${String(d.getUTCDate()).padStart(2, '0')}`;
+          }
+          return `${String(d.getUTCDate()).padStart(2, '0')}`;
+        }
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return months[d.getUTCMonth()];
+      };
 
-      // Fetch all raw data for every room in one pass
+      // Fetch all raw data for every room in one pass. The DB holds real UTC
+      // instants, so widen the query to cover both the naive window and the
+      // viewer-local window (for UTC+3, local midnight = 21:00 UTC the
+      // previous day, which the naive range would drop).
+      const offsetStartDate = new Date(startDate.getTime() - offsetMs);
+      const offsetEndDate = new Date(endDate.getTime() - offsetMs);
+      const queryStart = new Date(Math.min(startDate.getTime(), offsetStartDate.getTime()));
+      const queryEnd = new Date(Math.max(endDate.getTime(), offsetEndDate.getTime()));
       const allRawData = [];
       for (const room of rooms) {
-        const rows = await HistoricalData.findByRoomAndDateRange(room.id, startDate, endDate);
+        const rows = await HistoricalData.findByRoomAndDateRange(room.id, queryStart, queryEnd);
         for (const row of rows) {
           allRawData.push({ ...row, roomId: room.id, roomName: room.name });
         }
       }
 
+      // Load spot prices once for the (widened) window and resolve them in
+      // memory, instead of a DB round-trip per bucket. Matches the original
+      // "latest price at or before the bucket midpoint" behaviour.
+      const priceRows = await SpotPrice.findByDateRange(
+        new Date(queryStart.getTime() - 24 * 60 * 60 * 1000),
+        new Date(queryEnd.getTime() + 60 * 60 * 1000)
+      );
+      const priceAt = (tsMs) => {
+        let best = null;
+        for (const p of priceRows) {
+          const t = new Date(p.timestamp).getTime();
+          if (t <= tsMs && (best === null || t > best.t)) best = { t, price: p.price };
+        }
+        if (best) return best.price;
+        // Nothing at/before (e.g. very first bucket) → use earliest available
+        return priceRows.length ? priceRows[0].price : null;
+      };
+
+      // Strict variant for FUTURE buckets: only accept a price that actually
+      // covers the slot (recorded at/just before its start). Prevents the spot
+      // line from flat-lining past the published day-ahead window.
+      const priceForSlot = (slotStart, slotEnd) => {
+        const realMid = (slotStart.getTime() + slotEnd.getTime()) / 2 - offsetMs;
+        const notBefore = slotStart.getTime() - offsetMs - 30 * 60 * 1000;
+        let best = null;
+        for (const p of priceRows) {
+          const t = new Date(p.timestamp).getTime();
+          if (t <= realMid && t >= notBefore && (best === null || t > best.t)) best = { t, price: p.price };
+        }
+        return best ? best.price : null;
+      };
+
       // Build result: one entry per slot, all rooms as flat keys
       const result = [];
       for (const slotStart of slots) {
-        const slotEnd = new Date(slotStart);
-        if (rangeDays <= 1) slotEnd.setHours(slotEnd.getHours() + 1);
-        else if (rangeDays <= 31) slotEnd.setDate(slotEnd.getDate() + 1);
-        else slotEnd.setMonth(slotEnd.getMonth() + 1);
-
+        const slotEnd = addUnit(slotStart);
         const bucket = allRawData.filter((row) => {
-          const t = new Date(row.timestamp);
+          const t = local(new Date(row.timestamp));
           return t >= slotStart && t < slotEnd;
         });
 
         const entry = {
           label: slotLabel(slotStart),
-          timestamp: slotStart.toISOString(),
+          timestamp: new Date(slotStart.getTime() - offsetMs).toISOString(),
         };
 
-        // Per-room energy and cost
-        let totalEnergy = 0;
-        let spotPriceSum = 0;
-        let spotPriceCount = 0;
+        // Future slot → keep the axis label but return null data so the
+        // chart lines end at the current time instead of extending forward.
+        // Spot prices are published day-ahead, so they ARE known for future
+        // buckets — the spot line spans the whole day/period.
+        if (slotStart.getTime() > lastWithDataSlot.getTime()) {
+          entry.totalEnergy = null;
+          entry.totalCost = null;
+          const futurePrice = priceForSlot(slotStart, slotEnd);
+          entry.spotPrice = futurePrice != null
+            ? Math.round(parseFloat(futurePrice) * 10000) / 10000
+            : null;
+          for (const room of rooms) {
+            entry[`room_${room.id}`] = null;
+            entry[`roomCost_${room.id}`] = null;
+          }
+          result.push(entry);
+          continue;
+        }
 
+        // Per-room energy
+        let totalEnergy = 0;
         for (const room of rooms) {
           const roomRows = bucket.filter((r) => r.roomId === room.id);
           const energy = roomRows.reduce((sum, r) => sum + parseFloat(r.energy_consumption || 0), 0);
@@ -265,36 +318,30 @@ class CostService {
           totalEnergy += energy;
         }
 
-        // Spot price from bucket data
-        for (const row of bucket) {
-          if (spotPriceCount === 0 && row.spot_price != null) {
-            spotPriceSum = parseFloat(row.spot_price);
-            spotPriceCount = 1;
-          }
-        }
-
-        // If no spot price in bucket, fallback to closest
-        if (spotPriceCount === 0) {
+        // Spot price: prefer a value recorded in the bucket, else the latest
+        // published price at/before the bucket midpoint (real UTC instant).
+        let avgSpotPrice = 0;
+        const rowWithPrice = bucket.find((r) => r.spot_price != null);
+        if (rowWithPrice) {
+          avgSpotPrice = parseFloat(rowWithPrice.spot_price);
+        } else {
           const midPoint = new Date((slotStart.getTime() + slotEnd.getTime()) / 2);
-          const spotPrice = await SpotPrice.findClosestToTimestamp(midPoint);
-          if (spotPrice) {
-            spotPriceSum = parseFloat(spotPrice.price);
-            spotPriceCount = 1;
-          }
+          const price = priceAt(midPoint.getTime() - offsetMs);
+          if (price != null) avgSpotPrice = parseFloat(price);
         }
 
-        const avgSpotPrice = spotPriceCount > 0 ? spotPriceSum / spotPriceCount : 0;
-        const totalCost = totalEnergy * (contract ? this.calculateEffectivePrice(contract, avgSpotPrice) : avgSpotPrice);
+        const effectivePrice = contract
+          ? this.calculateEffectivePrice(contract, avgSpotPrice)
+          : avgSpotPrice;
 
         entry.totalEnergy = Math.round(totalEnergy * 1000) / 1000;
-        entry.totalCost = Math.round(totalCost * 100) / 100;
+        entry.totalCost = Math.round(totalEnergy * effectivePrice * 100) / 100;
         entry.spotPrice = Math.round(avgSpotPrice * 10000) / 10000;
 
-        // Per-room cost (computed after avgSpotPrice is available)
+        // Per-room cost at this bucket's effective price (used by the tooltip)
         for (const room of rooms) {
           const roomEnergy = entry[`room_${room.id}`] || 0;
-          const roomCost = roomEnergy * (contract ? this.calculateEffectivePrice(contract, avgSpotPrice) : avgSpotPrice);
-          entry[`roomCost_${room.id}`] = Math.round(roomCost * 100) / 100;
+          entry[`roomCost_${room.id}`] = Math.round(roomEnergy * effectivePrice * 100) / 100;
         }
 
         result.push(entry);

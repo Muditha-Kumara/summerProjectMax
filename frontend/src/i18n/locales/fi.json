@@ -125,6 +125,7 @@
     "avgPrice": "Keskihinta",
     "byDevice": "Huoneittain",
     "timeseries": "Energiankulutus aikajanalla",
+    "timeAxis": "Aika",
     "spotPrice": "Spot-hinta",
     "usageBreakdown": "Kulutusjakauma",
     "roomEnergy": "Huonekohtainen energia",

@@ -125,6 +125,7 @@
     "avgPrice": "Avg Price",
     "byDevice": "By Room",
     "timeseries": "Energy Over Time",
+    "timeAxis": "Time",
     "spotPrice": "Spot Price",
     "usageBreakdown": "Usage Breakdown",
     "roomEnergy": "Energy by Room",

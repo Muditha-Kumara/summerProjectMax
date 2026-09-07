@@ -36,7 +36,7 @@ const ROOM_DASHES = [
 
 // ── Custom Tooltip ──
 
-const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost }) => {
+const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtCents, fmtCost }) => {
   if (!active || !payload || !payload.length) return null;
 
   const roomItems = [];
@@ -47,7 +47,7 @@ const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost
   payload.forEach((p) => {
     if (p.dataKey === 'totalEnergy') totalEnergyItem = p;
     else if (p.dataKey === 'totalCost') totalCostItem = p;
-    else if (p.dataKey === 'spotPrice') spotPriceItem = p;
+    else if (p.dataKey === 'spotPriceCents') spotPriceItem = p;
     else if (p.dataKey.startsWith('roomCost_')) { /* skip – merged into roomItems */ }
     else if (p.dataKey.startsWith('room_')) roomItems.push(p);
   });
@@ -86,7 +86,7 @@ const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost
         {spotPriceItem && (
           <div className="flex justify-between">
             <span className="text-gray-500">{t('energy.spotPrice')}</span>
-            <span className="font-semibold text-amber-600">{fmtPrice(spotPriceItem.value)}</span>
+            <span className="font-semibold text-amber-600">{fmtCents(spotPriceItem.value)}</span>
           </div>
         )}
         {totalCostItem && (
@@ -105,7 +105,6 @@ const CustomTooltip = ({ active, payload, label, t, fmtEnergy, fmtPrice, fmtCost
 const AdminEnergy = () => {
   const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState('day');
-  const [summary, setSummary] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [points, setPoints] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -147,7 +146,14 @@ const AdminEnergy = () => {
     };
   };
 
-  const toDateStr = (d) => d.toISOString().split('T')[0];
+  // Format as a LOCAL YYYY-MM-DD (toISOString would shift the date back a
+  // day for UTC+ viewers, e.g. Finnish midnight → previous day in UTC).
+  const toDateStr = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  // Minutes ahead of UTC (EEST=180, EET=120) so the server buckets align
+  // with the browser wall clock instead of server UTC.
+  const tzOffsetMinutes = () => -new Date().getTimezoneOffset();
 
   // ── Fetch ──
 
@@ -155,14 +161,14 @@ const AdminEnergy = () => {
     try {
       setLoading(true);
       const { startDate, endDate } = getDateRange();
-      const params = { startDate: toDateStr(startDate), endDate: toDateStr(endDate) };
+      const params = {
+        startDate: toDateStr(startDate),
+        endDate: toDateStr(endDate),
+        tzOffset: tzOffsetMinutes(),
+      };
 
-      const [summaryRes, tsRes] = await Promise.all([
-        api.get('/costs/summary', { params }),
-        api.get('/costs/timeseries', { params }),
-      ]);
+      const tsRes = await api.get('/costs/timeseries', { params });
 
-      if (summaryRes.data.success) setSummary(summaryRes.data.data);
       if (tsRes.data.success) {
         setRooms(tsRes.data.data.rooms || []);
         setPoints(tsRes.data.data.points || []);
@@ -179,6 +185,42 @@ const AdminEnergy = () => {
   const fmtEnergy = (v) => (v != null ? `${Number(v).toFixed(2)} kWh` : '--');
   const fmtPrice = (v) => (v != null ? `${(v * 100).toFixed(2)} c/kWh` : '--');
   const fmtCost = (v) => (v != null ? `${Number(v).toFixed(2)} €` : '--');
+  const fmtCents = (v) => (v != null ? `${Number(v).toFixed(2)} c/kWh` : '--');
+
+  // Add a cents/kWh field so the spot-price axis reads naturally
+  // (5.2 instead of 0.052 EUR/kWh)
+  const chartPoints = React.useMemo(
+    () =>
+      points.map((p) => ({
+        ...p,
+        spotPriceCents: p.spotPrice != null ? Math.round(p.spotPrice * 10000) / 100 : null,
+      })),
+    [points]
+  );
+
+  // Timezone of the plotted buckets, e.g. "EEST" with "UTC+3" as fallback
+  const tzLabel = React.useMemo(() => {
+    const abbr = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+      .formatToParts(new Date())
+      .find((p) => p.type === 'timeZoneName')?.value;
+    if (abbr && !/^GMT|[+-]\d/.test(abbr)) return abbr;
+    const hours = -new Date().getTimezoneOffset() / 60;
+    return `UTC${hours >= 0 ? '+' : ''}${hours}`;
+  }, []);
+
+  // ── Summary totals (derived from the TZ-correct timeseries so the cards
+  //     always agree with the chart) ──
+
+  const summary = React.useMemo(() => {
+    if (!points.length) return null;
+    const totalEnergy = points.reduce((s, p) => s + (p.totalEnergy || 0), 0);
+    const totalCost = points.reduce((s, p) => s + (p.totalCost || 0), 0);
+    return {
+      totalEnergy,
+      totalCost,
+      avgPricePerKwh: totalEnergy > 0 ? totalCost / totalEnergy : 0,
+    };
+  }, [points]);
 
   // ── Pie chart data ──
 
@@ -230,52 +272,60 @@ const AdminEnergy = () => {
 
       {/* Main chart: ALL lines in ONE LineChart */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">{t('energy.timeseries')}</h3>
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">
+          {t('energy.timeseries')}{' '}
+          <span className="text-sm font-normal text-gray-400">({t('energy.timeAxis', 'Time')}: {tzLabel})</span>
+        </h3>
         {loading ? (
           <ChartSkeleton />
         ) : !hasData ? (
           <EmptyState message={t('energy.noData')} />
         ) : (
           <ResponsiveContainer width="100%" height={480}>
-            <LineChart data={points} margin={{ top: 20, right: 100, left: 60, bottom: 30 }}>
+            <LineChart data={chartPoints} margin={{ top: 20, right: 110, left: 70, bottom: 45 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="label" 
+              {/* X-axis: bucket labels (hour / day / month), thinned out when crowded */}
+              <XAxis
+                dataKey="label"
                 tick={{ fontSize: 11, fill: '#6b7280' }}
                 stroke="#d1d5db"
+                interval="preserveStartEnd"
+                minTickGap={20}
+                angle={timeRange === 'day' ? -45 : 0}
+                textAnchor={timeRange === 'day' ? 'end' : 'middle'}
+                height={timeRange === 'day' ? 50 : 30}
               />
-              {/* Left Y-axis: kWh for per-room energy lines */}
-              <YAxis 
-                yAxisId="energy" 
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-                stroke="#d1d5db"
-                label={{ value: 'kWh', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 11, fill: '#6b7280' } }}
+              {/* Left Y-axis (blue): energy in kWh — room lines AND total share it */}
+              <YAxis
+                yAxisId="energy"
+                orientation="left"
+                tick={{ fontSize: 11, fill: '#2563eb' }}
+                stroke="#93c5fd"
+                width={52}
+                tickFormatter={(v) => `${v}`}
+                label={{ value: 'Energy (kWh)', angle: -90, position: 'insideLeft', offset: 18, style: { fontSize: 12, fill: '#2563eb', textAnchor: 'middle' } }}
               />
-              {/* Second left Y-axis: kWh for total consumption */}
-              <YAxis 
-                yAxisId="totalEnergy" 
-                orientation="left" 
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-                stroke="#d1d5db"
-                label={{ value: 'Total kWh', angle: -90, position: 'insideLeft', offset: 45, style: { fontSize: 11, fill: '#6b7280' } }}
+              {/* Right Y-axis (red): cost in € */}
+              <YAxis
+                yAxisId="totalCost"
+                orientation="right"
+                tick={{ fontSize: 11, fill: '#dc2626' }}
+                stroke="#fca5a5"
+                width={52}
+                tickFormatter={(v) => `${v}`}
+                label={{ value: 'Cost (€)', angle: 90, position: 'insideRight', offset: 14, style: { fontSize: 12, fill: '#dc2626', textAnchor: 'middle' } }}
               />
-              {/* Right Y-axis: € for total cost */}
-              <YAxis 
-                yAxisId="totalCost" 
-                orientation="right" 
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-                stroke="#d1d5db"
-                label={{ value: '€', angle: 90, position: 'insideRight', offset: 10, style: { fontSize: 11, fill: '#6b7280' } }}
+              {/* Far right Y-axis (amber): spot price in c/kWh */}
+              <YAxis
+                yAxisId="spotPrice"
+                orientation="right"
+                tick={{ fontSize: 11, fill: '#d97706' }}
+                stroke="#fcd34d"
+                width={56}
+                tickFormatter={(v) => `${v}`}
+                label={{ value: 'Spot (c/kWh)', angle: 90, position: 'insideRight', offset: 20, style: { fontSize: 12, fill: '#d97706', textAnchor: 'middle' } }}
               />
-              {/* Far right Y-axis: c/kWh for spot price */}
-              <YAxis 
-                yAxisId="spotPrice" 
-                orientation="right" 
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-                stroke="#d1d5db"
-                label={{ value: 'c/kWh', angle: 90, position: 'insideRight', offset: 45, style: { fontSize: 11, fill: '#6b7280' } }}
-              />
-              <Tooltip content={<CustomTooltipWrapper t={t} fmtEnergy={fmtEnergy} fmtPrice={fmtPrice} fmtCost={fmtCost} />} />
+              <Tooltip content={<CustomTooltipWrapper t={t} fmtEnergy={fmtEnergy} fmtCents={fmtCents} fmtCost={fmtCost} />} />
               <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
 
               {/* Per-room energy lines */}
@@ -310,9 +360,9 @@ const AdminEnergy = () => {
                 />
               ))}
 
-              {/* Total consumption – thick solid, separate axis */}
+              {/* Total consumption – thick solid, same kWh axis as rooms */}
               <Line
-                yAxisId="totalEnergy"
+                yAxisId="energy"
                 type="monotone"
                 dataKey="totalEnergy"
                 name={t('energy.totalConsumption')}
@@ -334,11 +384,11 @@ const AdminEnergy = () => {
                 activeDot={{ r: 4 }}
               />
 
-              {/* Spot price – dashed amber, separate axis */}
+              {/* Spot price – dashed amber, own c/kWh axis */}
               <Line
                 yAxisId="spotPrice"
                 type="stepAfter"
-                dataKey="spotPrice"
+                dataKey="spotPriceCents"
                 name={t('energy.spotPrice')}
                 stroke="#f59e0b"
                 strokeWidth={2}
