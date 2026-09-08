@@ -93,10 +93,12 @@
     "error": "Tyvärr, jag kunde inte behandla det. Försök igen.",
     "voiceSpeed": "Rösthastighet",
     "selectVoice": "Välj röst",
+    "autoVoice": "Automatisk (enligt språk)",
     "testVoice": "Testa röst",
     "clearChat": "Rensa chatt",
     "speaking": "Talar...",
-    "loadingVoices": "Laddar röster..."
+    "loadingVoices": "Laddar röster...",
+    "greeting": "Hej! Jag är din smarta värmeassistent. Du kan be mig ändra temperaturen eller ställa in lägen som hemma, borta, eco och bekväm. Tryck på mikrofonen och tala."
   },
   "weather": {
     "clear": "Klart",

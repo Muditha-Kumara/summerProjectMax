@@ -15,6 +15,27 @@ const VA_STATE = {
 const COOLDOWN_MS = 1500; // Time after speech ends before mic can listen again (shortened so high-latency links don't eat the next command)
 const PANEL_AUTO_CLOSE_MS = 2000; // Time after cooldown before the panel auto-dismisses
 
+// Map UI language to BCP-47 locale used by speech synthesis / recognition
+const langToBcp47 = (lng) => (lng === 'fi' ? 'fi-FI' : lng === 'sv' ? 'sv-SE' : 'en-US');
+
+// True when a voice's language belongs to the same family as a locale (e.g. fi-FI voice for fi)
+const voiceMatchesLang = (voiceLang, lang) =>
+  !!voiceLang && voiceLang.replace('_', '-').toLowerCase().startsWith(lang.slice(0, 2).toLowerCase());
+
+// Find a TTS voice matching a locale: exact match first, then language prefix
+const findVoiceForLang = (voices, lang) =>
+  voices.find((v) => v.lang === lang) ||
+  voices.find((v) => voiceMatchesLang(v.lang, lang));
+
+// Show voices for the current UI language first, then the rest - so the customer
+// can still explore every voice the browser offers
+const sortVoicesByLanguage = (voices, lang) =>
+  [...voices].sort((a, b) => {
+    const am = voiceMatchesLang(a.lang, lang) ? 0 : 1;
+    const bm = voiceMatchesLang(b.lang, lang) ? 0 : 1;
+    return am - bm || String(a.lang).localeCompare(String(b.lang)) || a.name.localeCompare(b.name);
+  });
+
 const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const { t, i18n } = useTranslation();
   const [isListening, setIsListening] = useState(false);
@@ -43,6 +64,8 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
   const conversationHistoryRef = useRef([]);
   const lastAIResponseRef = useRef(''); // Track last AI response to filter feedback
   const speechActiveRef = useRef(false); // CRITICAL: Block recognition during speech
+  const greetedRef = useRef(false); // Speak the intro greeting once on first mic use
+  const pendingListenAfterSpeechRef = useRef(false); // Auto-start listening once the greeting finishes
 
   // Keep refs in sync with state so speak() always uses latest values
   useEffect(() => { voiceSpeedRef.current = voiceSpeed; }, [voiceSpeed]);
@@ -82,33 +105,42 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     return false;
   }, []);
 
-  // Load available voices
+  // Load available voices and keep the selected voice in sync with the UI language.
+  // Voice preferences are stored PER LANGUAGE so switching to Finnish/Swedish
+  // automatically initializes a matching voice (instead of keeping English).
   useEffect(() => {
     const loadVoices = () => {
       const voices = synthRef.current.getVoices();
       if (!voices || voices.length === 0) return;
       setAvailableVoices(voices);
 
-      // Load saved voice preference
-      const savedVoiceName = localStorage.getItem('selectedVoice');
       const savedSpeed = localStorage.getItem('voiceSpeed');
-
       if (savedSpeed) {
         const parsed = parseFloat(savedSpeed);
         if (!isNaN(parsed)) setVoiceSpeed(parsed);
       }
 
-      // Resolve voice: saved > language match > first available
+      const lang = langToBcp47(i18n.language);
+
+      // Resolve a voice for the CURRENT UI language only. Saved picks are
+      // validated against the language so a stale/foreign voice (e.g. German)
+      // can never stick when the app language changes.
       let resolvedVoice = null;
-      if (savedVoiceName) {
-        resolvedVoice = voices.find(v => v.name === savedVoiceName);
+      const savedForLang = localStorage.getItem(`selectedVoice:${lang}`);
+      if (savedForLang) {
+        resolvedVoice = voices.find((v) => v.name === savedForLang && voiceMatchesLang(v.lang, lang));
       }
       if (!resolvedVoice) {
-        const lang = i18n.language === 'fi' ? 'fi-FI' : i18n.language === 'sv' ? 'sv-SE' : 'en-US';
-        resolvedVoice = voices.find(v => v.lang === lang) || voices[0];
+        resolvedVoice = findVoiceForLang(voices, lang);
       }
-      if (resolvedVoice) {
-        setSelectedVoice(resolvedVoice);
+      if (!resolvedVoice) {
+        // Browser/OS language, then English - never force an unrelated voice
+        const navLang = (navigator.language || 'en-US').replace('_', '-');
+        resolvedVoice = findVoiceForLang(voices, navLang) || findVoiceForLang(voices, 'en-US');
+      }
+      setSelectedVoice(resolvedVoice || null);
+      if (!findVoiceForLang(voices, lang)) {
+        console.warn(`[VoiceAssistant] No TTS voice installed for ${lang} - speaking with utterance.lang hint`);
       }
     };
 
@@ -127,11 +159,19 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     localStorage.setItem('voiceSpeed', voiceSpeed.toString());
   }, [voiceSpeed]);
 
-  useEffect(() => {
-    if (selectedVoice) {
-      localStorage.setItem('selectedVoice', selectedVoice.name);
+  // Persist ONLY explicit customer choices (see handleVoiceChange) - never the
+  // auto-resolved voice, otherwise a fallback could get frozen in place.
+  const handleVoiceChange = (name) => {
+    const voice = availableVoices.find((v) => v.name === name) || null;
+    setSelectedVoice(voice);
+    const lang = langToBcp47(i18n.language);
+    if (voice) {
+      localStorage.setItem(`selectedVoice:${lang}`, voice.name);
+      localStorage.setItem('selectedVoice', voice.name);
+    } else {
+      localStorage.removeItem(`selectedVoice:${lang}`);
     }
-  }, [selectedVoice]);
+  };
 
   // Cleanup on unmount
   useEffect(() => {
@@ -223,9 +263,12 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       utterance.rate = voiceSpeedRef.current;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
+      // Always tell the browser which language to speak
+      utterance.lang = langToBcp47(i18n.language);
 
-      if (selectedVoiceRef.current) {
-        utterance.voice = selectedVoiceRef.current;
+      const voice = selectedVoiceRef.current;
+      if (voice && voiceMatchesLang(voice.lang, utterance.lang)) {
+        utterance.voice = voice;
       }
 
       utterance.onstart = () => {
@@ -295,6 +338,16 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
       return;
     }
 
+    // First-time intro: greet the customer in their language with the selected
+    // voice (showcasing the assistant's capability), then auto-start listening.
+    if (!greetedRef.current) {
+      greetedRef.current = true;
+      setShowPanel(true);
+      pendingListenAfterSpeechRef.current = true;
+      speak(t('voice.greeting') || 'Hello! I am your smart heating assistant. You can ask me to change the temperature, or set home, away, eco and comfort modes.');
+      return;
+    }
+
     // Cancel any ongoing speech before listening
     synthRef.current.cancel();
 
@@ -303,7 +356,7 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     setVaState(VA_STATE.LISTENING);
     
     const recognition = new SpeechRecognition();
-    recognition.lang = i18n.language === 'fi' ? 'fi-FI' : i18n.language === 'sv' ? 'sv-SE' : 'en-US';
+    recognition.lang = langToBcp47(i18n.language);
     recognition.continuous = true; // Keep listening until user stops speaking
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -667,6 +720,15 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
     }
   };
 
+  // When the intro greeting finishes (SPEAKING -> COOLDOWN -> IDLE), start listening automatically
+  useEffect(() => {
+    if (vaState === VA_STATE.IDLE && pendingListenAfterSpeechRef.current && !speechActiveRef.current) {
+      pendingListenAfterSpeechRef.current = false;
+      console.log('[VoiceAssistant] ▶️ Greeting finished, starting listening');
+      startListening();
+    }
+  }, [vaState, startListening]);
+
   const toggleListening = useCallback(() => {
     // Only allow manual toggle when in IDLE state
     if (vaStateRef.current !== VA_STATE.IDLE) {
@@ -786,13 +848,11 @@ const VoiceAssistant = ({ rooms, onRoomUpdate, onModeChange }) => {
                   {availableVoices.length > 0 ? (
                     <select
                       value={selectedVoice?.name || ''}
-                      onChange={(e) => {
-                        const voice = availableVoices.find(v => v.name === e.target.value);
-                        if (voice) setSelectedVoice(voice);
-                      }}
+                      onChange={(e) => handleVoiceChange(e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
-                      {availableVoices.map((voice) => (
+                      <option value="">{t('voice.autoVoice') || 'Auto (match language)'}</option>
+                      {sortVoicesByLanguage(availableVoices, langToBcp47(i18n.language)).map((voice) => (
                         <option key={voice.name} value={voice.name}>
                           {voice.name} ({voice.lang})
                         </option>

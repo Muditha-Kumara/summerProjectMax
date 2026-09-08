@@ -95,10 +95,12 @@
     "error": "Pahoittelut, en voinut käsitellä pyyntöäsi. Yritä uudelleen.",
     "voiceSpeed": "Puhenopeus",
     "selectVoice": "Valitse ääni",
+    "autoVoice": "Automaattinen (kielen mukaan)",
     "testVoice": "Testaa ääni",
     "clearChat": "Tyhjennä keskustelu",
     "speaking": "Puhutaan...",
-    "loadingVoices": "Ladataan ääniä..."
+    "loadingVoices": "Ladataan ääniä...",
+    "greeting": "Hei! Olen älykäs lämmitysavustajasi. Voit pyytää minua säätämään lämpötilaa tai asettamaan kodin, poissaolo-, säästämis- tai mukavuustilan. Paina mikrofonista ja puhu."
   },
   "weather": {
     "clear": "Selkeää",

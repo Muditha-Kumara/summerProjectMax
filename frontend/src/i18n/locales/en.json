@@ -95,10 +95,12 @@
     "error": "Sorry, I couldn't process that. Please try again.",
     "voiceSpeed": "Voice Speed",
     "selectVoice": "Select Voice",
+    "autoVoice": "Auto (match language)",
     "testVoice": "Test Voice",
     "clearChat": "Clear Chat",
     "speaking": "Speaking...",
-    "loadingVoices": "Loading voices..."
+    "loadingVoices": "Loading voices...",
+    "greeting": "Hello! I am your smart heating assistant. You can ask me to change the temperature, or set home, away, eco and comfort modes. Just press the microphone and speak."
   },
   "weather": {
     "clear": "Clear",
