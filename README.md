@@ -187,10 +187,10 @@ A full low-cost demo stack on **one pay-as-you-go Alibaba Cloud ECS instance**
 
 ## 📚 Documentation
 
-- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) — feature phases: virtual Shelly, spot prices, contracts, energy data
-- [VOICE_ASSISTANT_IMPLEMENTATION.md](VOICE_ASSISTANT_IMPLEMENTATION.md) — speech pipeline design
-- [ADMIN_ROOMS_FEATURE.md](ADMIN_ROOMS_FEATURE.md) — admin room management
-- [SSL_SETUP.md](SSL_SETUP.md) — local & deployed HTTPS setup
+- [docs/IMPLEMENTATION_SUMMARY.md](docs/IMPLEMENTATION_SUMMARY.md) — feature phases: virtual Shelly, spot prices, contracts, energy data
+- [docs/VOICE_ASSISTANT_IMPLEMENTATION.md](docs/VOICE_ASSISTANT_IMPLEMENTATION.md) — speech pipeline design
+- [docs/ADMIN_ROOMS_FEATURE.md](docs/ADMIN_ROOMS_FEATURE.md) — admin room management
+- [docs/SSL_SETUP.md](docs/SSL_SETUP.md) — local & deployed HTTPS setup
 - [infra/README.md](infra/README.md) — cloud deployment guide
 
 ## ⚠️ Notes & gotchas
